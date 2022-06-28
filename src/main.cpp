@@ -10,7 +10,6 @@ struct Vector2
 {
     uint16_t x, y;
 };
-Vector2 line = {10, 8};
 
 void lcd_write(byte data)
 {
@@ -37,20 +36,56 @@ void clear_ram()
         lcd_write(0x00);
     }
 }
-void drawpixel(Vector2 *poz)
+void drawpixel(uint8_t x, uint8_t y)
 {
     PORTD = PORTD & ~(1 << LCD_DC);
-    byte y_ = poz->y / 8;
-    byte y_pixel = poz->y - y_ * 8;
+    byte y_ = y / 8;
+    byte y_pixel = y - y_ * 8;
     byte yy = 0x40 | y_;
+    byte xx = 0x80 | x;
     lcd_write(yy);
+    lcd_write(xx);
     PORTD = PORTD | (1 << LCD_DC);
-    for (uint8_t i = 0; i < poz->x; i++)
-    {
-        lcd_write(0x00);
-    }
     lcd_write(0x01 << y_pixel);
 }
+void draw_line(Vector2 *poz)
+{
+    uint8_t x1 = 0, y1 = 0;
+    uint8_t dx = poz->x - x1;
+    uint8_t dy = poz->y - y1;
+    float m = dy / dx;
+    float b = y1 - (m * x1);
+    int j = 0;
+    for (size_t i = 0; i < dx; i++)
+    {
+        drawpixel((uint8_t)x1 + i, (uint8_t)round(m * (x1 + i) + b));
+    }
+}
+void plot_line(int x0, int y0, int x1, int y1)
+{
+    int dx = abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+    int dy = -abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+    int err = dx + dy, e2; /* error value e_xy */
+
+    for (size_t i = 0; i < sqrt(x1*x1+y1*y1); i++)
+    { /* loop */
+        drawpixel(x0, y0);
+        if (x0 == x1 && y0 == y1)
+            break;
+        e2 = 2 * err;
+        if (e2 >= dy)
+        {
+            err += dy;
+            x0 += sx;
+        } /* e_xy+e_x > 0 */
+        if (e2 <= dx)
+        {
+            err += dx;
+            y0 += sy;
+        } /* e_xy+e_y < 0 */
+    }
+}
+
 void init_lcd()
 {
     pinMode(LED_BUILTIN, OUTPUT);
@@ -60,7 +95,7 @@ void init_lcd()
     PORTD = PORTD & ~(1 << LCD_DC);
     PORTD = PORTD & ~(1 << LCD_CE);
     lcd_write(0x21); // LCD Extended Commands.
-    lcd_write(0xB9); // Set LCD Vop (Contrast).
+    lcd_write(0xBF); // Set LCD Vop (Contrast).
     lcd_write(0x04); // Set Temp coefficent.
     lcd_write(0x14); // LCD bias mode 1:48.
     lcd_write(0x20); // LCD Basic Commands
@@ -72,7 +107,35 @@ int main(void)
 {
     init();
     init_lcd();
-    drawpixel(&line);
+    // drawpixel(3, 1);
+    Vector2 line{37, 42};
+    // draw_line(&line);
+    uint8_t i = 0;
+    bool ok = 0;
+    while (true)
+    {
+        if (i < 65 && ok == 0)
+        {
+            i++;
+        }
+        if (i == 65 && ok == 0)
+        {
+            ok = 1;
+        }
+        if (i <= 65 && ok == 1)
+        {
+            i--;
+        }
+        if (i == 0 && ok == 1)
+        {
+            ok = 0;
+        }
+
+        plot_line(0, 0, i, 30);
+        delay(20);
+        clear_ram();
+    }
+
     // lcd_write(0x7F);
     // lcd_write(0x05);
     // lcd_write(0x07);
