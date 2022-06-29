@@ -100,25 +100,45 @@ void plot_line(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1)
         } /* e_xy+e_y < 0 */
     }
 }
-void print_num(uint8_t x, uint8_t y, uint8_t number)
+void print_digit(uint8_t x, uint8_t y, uint8_t number)
 {
     uint8_t *buffer = (uint8_t *)malloc(sizeof(nums));
     memcpy_P(buffer, nums, sizeof(nums));
-    uint8_t counter = 1;
+    uint8_t counter = 1,z=2;
     byte y_ = y / 8;
     byte y_pixel = y - y_ * 8;
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < sizeof(nums); i++)
     {
         if (*(buffer + i) == 0x00)
-            counter++;
+            {counter++;z=0;}
         if (counter == number)
             {
-                framebuf[y_][x+i] |= (*(buffer+i));
+                z++;
+                framebuf[y_][x+z] |= (*(buffer+i));
             }
             //lcd_write(*(buffer+i));
             //Serial.println(*(buffer + i));
     }
     free(buffer);
+}
+void print_num(uint8_t x, uint8_t y, uint32_t number)
+{
+    uint32_t inv = 0;
+    uint8_t i = 0;
+    while(number)
+    {
+        inv=inv*10+number%10;
+        number/=10;
+    }
+    while(inv)
+    {
+        print_digit((i*5)+x,y,inv%10);
+        inv/=10; 
+        i++;
+    }
+    i=0;
+   
+    
 }
 static inline void fps(const int seconds)
 {
@@ -138,7 +158,7 @@ static inline void fps(const int seconds)
         frameCount = 0;
         lastMillis = now;
     }
-    
+    print_num(66,0,framesPerSecond);
 }
 
 void init_lcd()
@@ -173,33 +193,38 @@ int main(void)
     //  lcd_write(a[k]);
 
     Serial.begin(9600);
-    print_num(0, 0, 2);
-    update();
-
-    // while (true)
-    // {
-    //     if (i < 83 && ok == 0)
-    //     {
-    //         i++;
-    //     }
-    //     if (i == 83 && ok == 0)
-    //     {
-    //         ok = 1;
-    //     }
-    //     if (i <= 83 && ok == 1)
-    //     {
-    //         i--;
-    //     }
-    //     if (i == 1 && ok == 1)
-    //     {
-    //         ok = 0;
-    //     }
-    //     fps(5);
-    //     memcpy_P(framebuf, mouse, sizeof(mouse));
-    //     plot_line(83 - i, 1, i, 30);
-    //     update();
-    //     print_num(0, 0, 1);
-    //     // delay();
-    //     clear();
-    // }
+    // print_digit(0, 0, 2);
+    // print_digit(4, 0, 2);
+    // print_digit(8, 0, 2);
+    //print_digit(8, 0, 3);
+    
+    //update();
+    while (true)
+    {
+        if (i < 83 && ok == 0)
+        {
+            i++;
+        }
+        if (i == 83 && ok == 0)
+        {
+            ok = 1;
+        }
+        if (i <= 83 && ok == 1)
+        {
+            i--;
+        }
+        if (i == 1 && ok == 1)
+        {
+            ok = 0;
+        }
+       // fps(5);
+       
+        memcpy_P(framebuf, mouse, sizeof(mouse));
+        plot_line(83 - i, 1, i, 30);
+       // print_num(30,0,144);
+        fps(5);
+        update();
+        //delay(1000);
+        clear();
+    }
 }
