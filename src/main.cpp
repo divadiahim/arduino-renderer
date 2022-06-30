@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <arrays.h>
+#include "mouse.h"
 #define LCD_CE 6
 #define LCD_RESET 7
 #define LCD_DC 5
@@ -104,20 +105,23 @@ void print_digit(uint8_t x, uint8_t y, uint8_t number)
 {
     uint8_t *buffer = (uint8_t *)malloc(sizeof(nums));
     memcpy_P(buffer, nums, sizeof(nums));
-    uint8_t counter = 1,z=2;
+    uint8_t counter = 1, z = 2;
     byte y_ = y / 8;
     byte y_pixel = y - y_ * 8;
     for (int i = 0; i < sizeof(nums); i++)
     {
         if (*(buffer + i) == 0x00)
-            {counter++;z=0;}
+        {
+            counter++;
+            z = 0;
+        }
         if (counter == number)
-            {
-                z++;
-                framebuf[y_][x+z] |= (*(buffer+i));
-            }
-            //lcd_write(*(buffer+i));
-            //Serial.println(*(buffer + i));
+        {
+            z++;
+            framebuf[y_][x + z] |= (*(buffer + i));
+        }
+        // lcd_write(*(buffer+i));
+        // Serial.println(*(buffer + i));
     }
     free(buffer);
 }
@@ -125,20 +129,18 @@ void print_num(uint8_t x, uint8_t y, uint32_t number)
 {
     uint32_t inv = 0;
     uint8_t i = 0;
-    while(number)
+    while (number)
     {
-        inv=inv*10+number%10;
-        number/=10;
+        inv = inv * 10 + number % 10;
+        number /= 10;
     }
-    while(inv)
+    while (inv)
     {
-        print_digit((i*5)+x,y,inv%10);
-        inv/=10; 
+        print_digit((i * 5) + x, y, inv % 10);
+        inv /= 10;
         i++;
     }
-    i=0;
-   
-    
+    i = 0;
 }
 static inline void fps(const int seconds)
 {
@@ -154,11 +156,60 @@ static inline void fps(const int seconds)
     if (now - lastMillis >= seconds * 1000)
     {
         framesPerSecond = frameCount / seconds;
-        Serial.println(framesPerSecond);
+        // Serial.println(framesPerSecond);
         frameCount = 0;
         lastMillis = now;
     }
-    print_num(66,0,framesPerSecond);
+    print_num(66, 0, framesPerSecond);
+}
+
+void move_mouse(const int ms, uint8_t *buffer)
+{
+    static unsigned long lMillis;
+    MouseData data;
+    static int x=0;
+    static int y=0;
+    static byte y_ = y / 8;
+    // It is best if we declare millis() only once
+    unsigned long now = millis();
+    if (now - lMillis >= ms)
+    {
+        // Serial.println(ms);
+        lMillis = now;
+        data = readData();
+        
+        x+=data.position.x/10;
+        if(x>75)
+            x=x-(x-76);
+        // else if(x>=72 && x<=80)
+        //     x=x-(x-73);    
+        if(x<0)
+            x=0;
+        y-=data.position.y/10;
+        /////////////////////////////////////////
+
+        y_ = y / 8;
+        // Serial.print(data.status, BIN);
+        Serial.print("\tx=");
+        Serial.print(data.position.x);
+        // Serial.print("\ty=");
+        // Serial.print(data.position.y);
+        // Serial.print("\twheel=");
+        // Serial.print(data.wheel);
+        // Serial.println();
+        //Serial.println(x);
+       // Serial.println(y);
+
+        /////////////////////////////////
+    }
+    for (int i = 0; i < sizeof(mouse); i++)
+    {
+
+        framebuf[y_][x + i] |= (*(buffer + i));
+
+        // lcd_write(*(buffer+i));
+        // Serial.print(*(buffer + i));
+    }
 }
 
 void init_lcd()
@@ -181,6 +232,9 @@ int main(void)
 {
     init();
     init_lcd();
+    // mouse(9, 10);
+    // mouse.initialize();
+    Serial.begin(9600);
     uint8_t i = 0;
     bool ok = 0;
     // plot_line(5,0,0,10);
@@ -193,12 +247,15 @@ int main(void)
     //  lcd_write(a[k]);
 
     Serial.begin(9600);
+    initialize();
     // print_digit(0, 0, 2);
     // print_digit(4, 0, 2);
     // print_digit(8, 0, 2);
-    //print_digit(8, 0, 3);
-    
-    //update();
+    // print_digit(8, 0, 3);
+
+    // update();
+    uint8_t *buffer = (uint8_t *)malloc(sizeof(mouse));
+    memcpy_P(buffer, mouse, sizeof(mouse));
     while (true)
     {
         if (i < 83 && ok == 0)
@@ -217,14 +274,17 @@ int main(void)
         {
             ok = 0;
         }
-       // fps(5);
-       
-        memcpy_P(framebuf, mouse, sizeof(mouse));
+        // fps(5);
+
+        // memcpy_P(framebuf, mouse, sizeof(mouse));
         plot_line(83 - i, 1, i, 30);
-       // print_num(30,0,144);
+        //print_num(30,0,144);
         fps(5);
+        move_mouse(100, buffer);
         update();
-        //delay(1000);
+        // delay(1000);
         clear();
+
+      
     }
 }
