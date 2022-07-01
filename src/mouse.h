@@ -33,19 +33,19 @@ void waitForClockState(int expectedState)
         ;
 }
 
-void high(int pin)
+void high(uint8_t pin)
 {
     pinMode(pin, INPUT);
     digitalWrite(pin, HIGH);
 }
 
-void low(int pin)
+void low(uint8_t pin)
 {
     pinMode(pin, OUTPUT);
     digitalWrite(pin, LOW);
 }
 
-void writeBit(int bit)
+void writeBit(bool bit)
 {
     if (bit == HIGH)
     {
@@ -62,7 +62,7 @@ void writeBit(int bit)
 
 void writeByte(uint8_t data)
 {
-    int parityBit = 1;
+    bool parityBit = 1;
 
     high(_dataPin);
     high(_clockPin);
@@ -78,9 +78,9 @@ void writeByte(uint8_t data)
     waitForClockState(LOW);
 
     // data
-    for (int i = 0; i < 8; i++)
+    for (byte i = 0; i < 8; i++)
     {
-        int dataBit = bitRead(data, i);
+        bool dataBit = bitRead(data, i);
         writeBit(dataBit);
         parityBit = parityBit ^ dataBit;
     }
@@ -101,10 +101,10 @@ void writeByte(uint8_t data)
     low(_clockPin);
 }
 
-int readBit()
+bool readBit()
 {
     waitForClockState(LOW);
-    int bit = digitalRead(_dataPin);
+    bool bit = digitalRead(_dataPin);
     waitForClockState(HIGH);
     return bit;
 }
@@ -123,7 +123,7 @@ char readByte()
     waitForClockState(HIGH);
 
     // consume 8 bits of data
-    for (int i = 0; i < 8; i++)
+    for (byte i = 0; i < 8; i++)
     {
         bitWrite(data, i, readBit());
     }
@@ -140,14 +140,14 @@ char readByte()
     return data;
 }
 
-void writeAndReadAck(int data)
+void writeAndReadAck(uint8_t data)
 {
     writeByte((char)data);
     readByte();
 }
 
 
-void setSampleRate(int rate)
+void setSampleRate(uint16_t rate)
 {
     writeAndReadAck(SET_SAMPLE_RATE);
     writeAndReadAck(rate);
@@ -178,7 +178,7 @@ void checkIntelliMouseExtensions()
     _supportsIntelliMouseExtensions = (deviceId == INTELLI_MOUSE);
 }
 
-void setScaling(int scaling)
+void setScaling(uint8_t scaling)
 {
     writeAndReadAck(scaling);
 }
@@ -188,13 +188,11 @@ void setRemoteMode()
     writeAndReadAck(SET_REMOTE_MODE);
 }
 
-void setResolution(int resolution)
+void setResolution(uint8_t resolution)
 {
     writeAndReadAck(SET_RESOLUTION);
     writeAndReadAck(resolution);
 }
-
-
 
 void initialize()
 {
@@ -208,7 +206,6 @@ void initialize()
     setRemoteMode();
     delayMicroseconds(100);
 }
-
 
 void requestData()
 {

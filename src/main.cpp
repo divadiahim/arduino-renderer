@@ -1,6 +1,9 @@
 #include <Arduino.h>
-#include <arrays.h>
+#include "arrays.h"
 #include "mouse.h"
+#include "engine.h"
+
+
 #define LCD_CE 6
 #define LCD_RESET 7
 #define LCD_DC 5
@@ -169,7 +172,7 @@ void move_mouse(uint16_t ms, uint8_t *buffer)
     static bool halt;
 
     static int x = 0;
-    static int y = 0;
+    static int y = -3;
     static byte y_ = y / 8;
     byte y_pixel = y - y_ * 8;
     // It is best if we declare millis() only once
@@ -177,12 +180,12 @@ void move_mouse(uint16_t ms, uint8_t *buffer)
     if ((data.status == 0x0C) | halt == true)
     {
         halt = true;
-        ms *= 40;
+        ms *= 100;
     }
     if (data.status == 0x09)
     {
         halt = false;
-        ms /= 40;
+        ms /= 100;
     }
     unsigned long now = millis();
     if (now - lMillis >= ms)
@@ -190,12 +193,17 @@ void move_mouse(uint16_t ms, uint8_t *buffer)
         // Serial.println(ms);
         data = readData();
         lMillis = now;
-        x += data.position.x / 10;
+        x += data.position.x;
+        y -= data.position.y;
         if (x > 75)
-            x = x - (x - 76);
+            x = 76;
         if (x < 0)
             x = 0;
-        y -= data.position.y / 10;
+        if (y > 32)
+            y = 32;
+        if (y < -2)
+            y = -2;
+
         y_pixel = y - y_ * 8;
         y_ = y / 8;
 
@@ -223,7 +231,12 @@ void move_mouse(uint16_t ms, uint8_t *buffer)
         }
     }
 }
-
+void drawTriangle(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, uint8_t x3, uint8_t y3)
+{
+    plot_line(x1, y1, x2, y2);
+    plot_line(x1, y1, x3, y3);
+    plot_line(x2, y2, x3, y3);
+}
 void init_lcd()
 {
     DDRD = 0xF8; // make pins outputs
@@ -253,31 +266,35 @@ int main(void)
     // update();
     uint8_t *buffer = (uint8_t *)malloc(sizeof(mouse));
     memcpy_P(buffer, mouse, sizeof(mouse));
+    
+;
 
     while (true)
     {
-        if (i < 83 && ok == 0)
-        {
-            i++;
-        }
-        if (i == 83 && ok == 0)
-        {
-            ok = 1;
-        }
-        if (i <= 83 && ok == 1)
-        {
-            i--;
-        }
-        if (i == 1 && ok == 1)
-        {
-            ok = 0;
-        }
-        
-        plot_line(83 - i, 1, i, 30);
-        move_mouse(50, buffer);
+        //     if (i < 83 && ok == 0)
+        //     {
+        //         i++;
+        //     }
+        //     if (i == 83 && ok == 0)
+        //     {
+        //         ok = 1;
+        //     }
+        //     if (i <= 83 && ok == 1)
+        //     {
+        //         i--;
+        //     }
+        //     if (i == 1 && ok == 1)
+        //     {
+        //         ok = 0;
+        //     }
+
+        // plot_line(83 - i, 1, i, 30);
+        drawTriangle(30, 0, 0, 30, 60, 30);
+        move_mouse(20, buffer);
         fps(5);
         update();
         // delay(1000);
         clear();
+     
     }
 }
