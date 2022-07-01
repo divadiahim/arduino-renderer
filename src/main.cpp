@@ -156,59 +156,71 @@ static inline void fps(const int seconds)
     if (now - lastMillis >= seconds * 1000)
     {
         framesPerSecond = frameCount / seconds;
-        // Serial.println(framesPerSecond);
         frameCount = 0;
         lastMillis = now;
     }
     print_num(66, 0, framesPerSecond);
 }
 
-void move_mouse(const int ms, uint8_t *buffer)
+void move_mouse(uint16_t ms, uint8_t *buffer)
 {
     static unsigned long lMillis;
-    MouseData data;
-    static int x=0;
-    static int y=0;
+    static MouseData data;
+    static bool halt;
+
+    static int x = 0;
+    static int y = 0;
     static byte y_ = y / 8;
+    byte y_pixel = y - y_ * 8;
     // It is best if we declare millis() only once
+    byte px_overflow = 0x00;
+    if ((data.status == 0x0C) | halt == true)
+    {
+        halt = true;
+        ms *= 40;
+    }
+    if (data.status == 0x09)
+    {
+        halt = false;
+        ms /= 40;
+    }
     unsigned long now = millis();
     if (now - lMillis >= ms)
     {
         // Serial.println(ms);
-        lMillis = now;
         data = readData();
-        
-        x+=data.position.x/10;
-        if(x>75)
-            x=x-(x-76);
-        // else if(x>=72 && x<=80)
-        //     x=x-(x-73);    
-        if(x<0)
-            x=0;
-        y-=data.position.y/10;
-        /////////////////////////////////////////
-
+        lMillis = now;
+        x += data.position.x / 10;
+        if (x > 75)
+            x = x - (x - 76);
+        if (x < 0)
+            x = 0;
+        y -= data.position.y / 10;
+        y_pixel = y - y_ * 8;
         y_ = y / 8;
-        // Serial.print(data.status, BIN);
-        Serial.print("\tx=");
-        Serial.print(data.position.x);
-        // Serial.print("\ty=");
-        // Serial.print(data.position.y);
-        // Serial.print("\twheel=");
-        // Serial.print(data.wheel);
-        // Serial.println();
-        //Serial.println(x);
-       // Serial.println(y);
+
+        // Serial.println(data.status, BIN);
+        //  Serial.print("\tx=");
+        //  Serial.print(data.position.x);
+        //  Serial.print("\ty=");
+        //  Serial.print(data.position.y);
+        //  Serial.print("\twheel=");
+        //  Serial.print(data.wheel);
+        //  Serial.println();
+        //  Serial.println(x);
+        //  Serial.println(y);
 
         /////////////////////////////////
     }
-    for (int i = 0; i < sizeof(mouse); i++)
+    if (!halt)
     {
+        for (byte i = 0; i < sizeof(mouse); i++)
+        {
 
-        framebuf[y_][x + i] |= (*(buffer + i));
-
-        // lcd_write(*(buffer+i));
-        // Serial.print(*(buffer + i));
+            framebuf[y_][x + i] |= (*(buffer + i) << y_pixel);
+            px_overflow = (*(buffer + i) & 0xFF << 8 - y_pixel);
+            framebuf[y_ + 1][x + i] |= px_overflow >> 8 - y_pixel;
+        }
     }
 }
 
@@ -232,30 +244,16 @@ int main(void)
 {
     init();
     init_lcd();
-    // mouse(9, 10);
-    // mouse.initialize();
     Serial.begin(9600);
     uint8_t i = 0;
     bool ok = 0;
-    // plot_line(5,0,0,10);
-    // plot_line(5,0,10,10);
-    // plot_line(4,5,6,5);
-    // plot_line(3,0,0,6);
-    // plot_line(3,0,6,6);
-    // plot_line(2,3,4,3);
-    // for(int k = 0; k < 350; k++)
-    //  lcd_write(a[k]);
-
     Serial.begin(9600);
     initialize();
-    // print_digit(0, 0, 2);
-    // print_digit(4, 0, 2);
-    // print_digit(8, 0, 2);
-    // print_digit(8, 0, 3);
 
     // update();
     uint8_t *buffer = (uint8_t *)malloc(sizeof(mouse));
     memcpy_P(buffer, mouse, sizeof(mouse));
+
     while (true)
     {
         if (i < 83 && ok == 0)
@@ -274,17 +272,12 @@ int main(void)
         {
             ok = 0;
         }
-        // fps(5);
-
-        // memcpy_P(framebuf, mouse, sizeof(mouse));
+        
         plot_line(83 - i, 1, i, 30);
-        //print_num(30,0,144);
+        move_mouse(50, buffer);
         fps(5);
-        move_mouse(100, buffer);
         update();
         // delay(1000);
         clear();
-
-      
     }
 }
