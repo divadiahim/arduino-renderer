@@ -207,15 +207,11 @@ void initialize()
     delayMicroseconds(100);
 }
 
-void requestData()
-{
-    writeAndReadAck(REQUEST_DATA);
-}
 MouseData readData()
 {
     MouseData data;
 
-    requestData();
+    writeAndReadAck(REQUEST_DATA);
     data.status = readByte();
     data.position.x = readByte();
     data.position.y = readByte();

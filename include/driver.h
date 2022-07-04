@@ -19,6 +19,6 @@ void update();
 void plot_line(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1);
 void print_digit(uint8_t x, uint8_t y, uint8_t number);
 void print_num(uint8_t x, uint8_t y, uint32_t number);
-void fps(const int seconds);
+void fps(const uint8_t seconds);
 void drawTriangle(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, uint8_t x3, uint8_t y3);
 MouseData move_mouse(uint16_t ms, uint8_t *buffer);

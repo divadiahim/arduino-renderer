@@ -6,7 +6,20 @@ void MultiplyMatVec(vec3d *vec_in, vec3d *vec_out, mat4 *m)
     vec_out->x = vec_in->x * m->m[0][0] + vec_in->y * m->m[1][0] + vec_in->z * m->m[2][0] + m->m[3][0];
     vec_out->y = vec_in->x * m->m[0][1] + vec_in->y * m->m[1][1] + vec_in->z * m->m[2][1] + m->m[3][1];
     vec_out->z = vec_in->x * m->m[0][2] + vec_in->y * m->m[1][2] + vec_in->z * m->m[2][2] + m->m[3][2];
-    float w = vec_in->x * m->m[0][3] + vec_in->y * m->m[1][3] + vec_in->z * m->m[2][3] + m->m[3][3];
+    float w =  vec_in->z * m->m[2][3] + m->m[3][3];//vec_in->x * m->m[0][3] + vec_in->y * m->m[1][3] +
+    if (!w)
+    {
+        vec_out->x /= w;
+        vec_out->y /= w;
+        vec_out->z /= w;
+    }
+}
+void MultiplyMatVecProj(vec3d *vec_in, vec3d *vec_out, mat4 *m)
+{
+    vec_out->x = vec_in->x * m->m[0][0];
+    vec_out->y = vec_in->y * m->m[1][1];
+    vec_out->z = vec_in->z * m->m[2][2] + m->m[3][2];
+    float w = vec_in->z * m->m[2][3] + m->m[3][3];
     if (!w)
     {
         vec_out->x /= w;
@@ -18,14 +31,12 @@ float fThetaX = 0;
 float fThetaY = 0;
 void draw_cube(mat4 *proj, MouseData *mice)
 {
-    mat4 matRotZ, matRotX, matRotY;
+    mat4 matRotZ, matRotX;
     if (((*mice).status & 0x0F) == 0x09)
     {
         fThetaX -= 1.0f * ((float)(*mice).position.x / 10.0f);
         fThetaY += 1.0f * ((float)(*mice).position.y / 10.0f);
     }
-    static float fTheta = 0;
-    fTheta+=0.05;
     // Rotation Z
     matRotZ.m[0][0] = cosf(fThetaX);
     matRotZ.m[0][1] = sinf(fThetaX);
@@ -52,7 +63,7 @@ void draw_cube(mat4 *proj, MouseData *mice)
 
     for (auto tri : MeshCube.tris)
     {
-        triangle triCalc, triRotatedZ, triRotatedZX, triRotatedZXY;
+        triangle triCalc, triRotatedZ, triRotatedZX;
 
         //Rotate in Z-Axis
         MultiplyMatVec(&tri.p[0], &triRotatedZ.p[0], &matRotZ);
@@ -69,9 +80,9 @@ void draw_cube(mat4 *proj, MouseData *mice)
         // MultiplyMatVec(&triRotatedZX.p[1], &triRotatedZXY.p[1], &matRotY);
         // MultiplyMatVec(&triRotatedZX.p[2], &triRotatedZXY.p[2], &matRotY);
 
-        MultiplyMatVec(&triRotatedZX.p[0], &triCalc.p[0], proj);
-        MultiplyMatVec(&triRotatedZX.p[1], &triCalc.p[1], proj);
-        MultiplyMatVec(&triRotatedZX.p[2], &triCalc.p[2], proj);
+        MultiplyMatVecProj(&triRotatedZX.p[0], &triCalc.p[0], proj);
+        MultiplyMatVecProj(&triRotatedZX.p[1], &triCalc.p[1], proj);
+        MultiplyMatVecProj(&triRotatedZX.p[2], &triCalc.p[2], proj);
 
         // scale the view
         for (byte i = 0; i < 3; i++)

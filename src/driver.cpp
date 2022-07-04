@@ -96,7 +96,7 @@ void print_digit(uint8_t x, uint8_t y, uint8_t number)
     memcpy_P(buffer, nums, sizeof(nums));
     uint8_t counter = 1, z = 2;
     byte y_ = y / 8;
-    for (int i = 0; i < sizeof(nums); i++)
+    for (uint8_t i = 0; i < sizeof(nums); i++)
     {
         if (*(buffer + i) == 0x00)
         {
