@@ -3,72 +3,8 @@
 #include "engine.h"
 #include "driver.h"
 
-void move_mouse(uint16_t ms, uint8_t *buffer)
-{
-    static unsigned long lMillis;
-    static MouseData data;
-    static bool halt;
 
-    static int x = 0;
-    static int y = -3;
-    static byte y_ = y / 8;
-    byte y_pixel = y - y_ * 8;
-    // It is best if we declare millis() only once
-    byte px_overflow = 0x00;
-    if ((data.status == 0x0C) | halt == true)
-    {
-        halt = true;
-        ms *= 100;
-    }
-    if (data.status == 0x09)
-    {
-        halt = false;
-        ms /= 100;
-    }
-    unsigned long now = millis();
-    if (now - lMillis >= ms)
-    {
-        // Serial.println(ms);
-        data = readData();
-        lMillis = now;
-        x += data.position.x;
-        y -= data.position.y;
-        if (x > 75)
-            x = 76;
-        if (x < 0)
-            x = 0;
-        if (y > 32)
-            y = 32;
-        if (y < -2)
-            y = -2;
 
-        y_pixel = y - y_ * 8;
-        y_ = y / 8;
-
-        // Serial.println(data.status, BIN);
-        //  Serial.print("\tx=");
-        //  Serial.print(data.position.x);
-        //  Serial.print("\ty=");
-        //  Serial.print(data.position.y);
-        //  Serial.print("\twheel=");
-        //  Serial.print(data.wheel);
-        //  Serial.println();
-        //  Serial.println(x);
-        //  Serial.println(y);
-
-        /////////////////////////////////
-    }
-    if (!halt)
-    {
-        for (byte i = 0; i < sizeof(mouse); i++)
-        {
-
-            framebuf[y_][x + i] |= (*(buffer + i) << y_pixel);
-            px_overflow = (*(buffer + i) & 0xFF << 8 - y_pixel);
-            framebuf[y_ + 1][x + i] |= px_overflow >> 8 - y_pixel;
-        }
-    }
-}
 
 void init_lcd()
 {
@@ -99,9 +35,8 @@ int main(void)
     // update();
     uint8_t *buffer = (uint8_t *)malloc(sizeof(mouse));
     memcpy_P(buffer, mouse, sizeof(mouse));
-    mat4 new_proj=_startE();
-
-
+    mat4 new_proj = _startE();
+    MouseData mouse_proj;
     while (true)
     {
         //     if (i < 83 && ok == 0)
@@ -122,13 +57,13 @@ int main(void)
         //     }
 
         // plot_line(83 - i, 1, i, 30);
-        //drawTriangle(30, 0, 0, 30, 60, 30);
-        draw_cube(&new_proj);
-        move_mouse(20, buffer);
+        // drawTriangle(30, 0, 0, 30, 60, 30);
+        clear();
+        mouse_proj=move_mouse(20, buffer);
+        draw_cube(&new_proj,&mouse_proj);
+        
         fps(5);
         update();
-        // delay(1000);
-        clear();
-     
+        // delay(500);
     }
 }
