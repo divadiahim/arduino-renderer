@@ -105,7 +105,7 @@ void print_digit(uint8_t x, uint8_t y, uint8_t number)
     }
     free(buffer);
 }
-static uint16_t count_ifs(uint16_t n)
+static uint32_t count_ifs(uint32_t n)
 {
     if (n < 10)
         return 1;
@@ -116,7 +116,7 @@ static uint16_t count_ifs(uint16_t n)
 }
 void print_num(uint8_t x, uint8_t y, uint32_t number)
 {
-    static uint8_t n = 0;
+    uint8_t n = 0;
     n = count_ifs(number);
     for (byte i = 0; i < n; i++)
     {
@@ -220,7 +220,3 @@ MouseData move_mouse(uint16_t ms, uint8_t *buffer)
 //Never goona tell a lie and hurt you
 //Never goona turn you around
 //Never goona cut you down
-//Never goona make you cry
-
-
-

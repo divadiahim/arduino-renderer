@@ -13,15 +13,7 @@ typedef struct
     int wheel;
 } MouseData;
 
-
-
-extern int _clockPin;
-extern int _dataPin;
-extern bool _supportsIntelliMouseExtensions;
-
 void initialize();
-
 MouseData readData();
-
 
 #endif // MOUSE_H_

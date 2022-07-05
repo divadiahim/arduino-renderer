@@ -4,9 +4,9 @@
 #include "mouse.h"
 #define fnear  0.1f
 #define ffar  100.0f
-#define fFov  120.0f
 #define faspect_r  (float)48 / (float)84
-#define fFovRad  1.0f / tanf(fFov * 0.5 / 180.0f * PI)
+extern float fFov;
+extern float fFovRad;
 struct vec3d
 {
     float x, y, z;
@@ -26,9 +26,6 @@ struct mat4
 };
 
 extern mesh MeshCube;
-extern mat4 proj;
-extern float fThetaX;
-extern float fThetaY;
 
 mat4 _startE();
 void draw_cube(mat4 *proj, MouseData *mice);

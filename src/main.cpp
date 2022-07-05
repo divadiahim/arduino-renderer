@@ -2,10 +2,6 @@
 #include "mouse.h"
 #include "engine.h"
 #include "driver.h"
-
-
-
-
 void init_lcd()
 {
     DDRD = 0xF8; // make pins outputs
@@ -28,7 +24,7 @@ int main(void)
     init_lcd();
     // uint8_t i = 0;
     // bool ok = 0;
-    // Serial.begin(9600);
+    Serial.begin(9600);
     initialize();
 
     // update();
@@ -59,6 +55,7 @@ int main(void)
         draw_cube(&new_proj,&mouse_proj);
         fps(5);
         update();
+        
 
     }
 }

@@ -6,7 +6,7 @@ void MultiplyMatVec(vec3d *vec_in, vec3d *vec_out, mat4 *m)
     vec_out->x = vec_in->x * m->m[0][0] + vec_in->y * m->m[1][0] + vec_in->z * m->m[2][0] + m->m[3][0];
     vec_out->y = vec_in->x * m->m[0][1] + vec_in->y * m->m[1][1] + vec_in->z * m->m[2][1] + m->m[3][1];
     vec_out->z = vec_in->x * m->m[0][2] + vec_in->y * m->m[1][2] + vec_in->z * m->m[2][2] + m->m[3][2];
-    float w =  vec_in->z * m->m[2][3] + m->m[3][3];//vec_in->x * m->m[0][3] + vec_in->y * m->m[1][3] +
+    float w = vec_in->z * m->m[2][3] + m->m[3][3]; // vec_in->x * m->m[0][3] + vec_in->y * m->m[1][3] +
     if (!w)
     {
         vec_out->x /= w;
@@ -29,6 +29,8 @@ void MultiplyMatVecProj(vec3d *vec_in, vec3d *vec_out, mat4 *m)
 }
 float fThetaX = 0;
 float fThetaY = 0;
+float fFov = 120.0f;
+float fFovRad = 1.0f / tanf(fFov * 0.5 / 180.0f * PI);
 void draw_cube(mat4 *proj, MouseData *mice)
 {
     mat4 matRotZ, matRotX;
@@ -36,6 +38,13 @@ void draw_cube(mat4 *proj, MouseData *mice)
     {
         fThetaX -= 1.0f * ((float)(*mice).position.x / 10.0f);
         fThetaY += 1.0f * ((float)(*mice).position.y / 10.0f);
+    }
+    if ((*mice).wheel != 0)
+    {
+        fFov += (float)mice->wheel*2.0f;
+        fFovRad = 1.0f / tanf(fFov * 0.5 / 180.0f * PI);
+        (*proj).m[0][0] = faspect_r * fFovRad;
+        (*proj).m[1][1] = fFovRad;
     }
     // Rotation Z
     matRotZ.m[0][0] = cosf(fThetaX);
@@ -65,12 +74,12 @@ void draw_cube(mat4 *proj, MouseData *mice)
     {
         triangle triCalc, triRotatedZ, triRotatedZX;
 
-        //Rotate in Z-Axis
+        // Rotate in Z-Axis
         MultiplyMatVec(&tri.p[0], &triRotatedZ.p[0], &matRotZ);
         MultiplyMatVec(&tri.p[1], &triRotatedZ.p[1], &matRotZ);
         MultiplyMatVec(&tri.p[2], &triRotatedZ.p[2], &matRotZ);
 
-        //Rotate in X-Axis
+        // Rotate in X-Axis
         MultiplyMatVec(&triRotatedZ.p[0], &triRotatedZX.p[0], &matRotX);
         MultiplyMatVec(&triRotatedZ.p[1], &triRotatedZX.p[1], &matRotX);
         MultiplyMatVec(&triRotatedZ.p[2], &triRotatedZX.p[2], &matRotX);
@@ -158,6 +167,7 @@ mesh MeshCube =
             (struct vec3d){1.0f, 1.0f, -1.0f}},
 
 };
+
 mat4 _startE()
 {
 
