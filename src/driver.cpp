@@ -27,13 +27,7 @@ void clear_ram()
 }
 void clear()
 {
-    for (byte i = 0; i < 6; i++)
-    {
-        for (byte j = 0; j < 84; j++)
-        {
-            framebuf[i][j] = 0;
-        }
-    }
+    memset(framebuf, 0, sizeof(framebuf));
 }
 void drawpixel(uint8_t x, uint8_t y) // this is using the command mode | chnges the memeory adress//legagy broken code
 {
@@ -51,8 +45,8 @@ void put_pixel(uint8_t x, uint8_t y)
 {
     byte y_ = y / 8;
     byte y_pixel = y - y_ * 8;
-    if(x<84 && y_<6 && y_>=0)
-    framebuf[y_][x] |= (0x01 << y_pixel);
+    if (x < 84 && y_ < 6 && y_ >= 0)
+        framebuf[y_][x] |= (0x01 << y_pixel);
 }
 void update()
 {
@@ -94,7 +88,7 @@ void print_digit(uint8_t x, uint8_t y, uint8_t number)
 {
     uint8_t *buffer = (uint8_t *)malloc(sizeof(nums));
     memcpy_P(buffer, nums, sizeof(nums));
-    uint8_t counter = 1, z = 2;
+    uint8_t counter = 0, z = 1;
     byte y_ = y / 8;
     for (uint8_t i = 0; i < sizeof(nums); i++)
     {
@@ -111,22 +105,23 @@ void print_digit(uint8_t x, uint8_t y, uint8_t number)
     }
     free(buffer);
 }
+static uint16_t count_ifs(uint16_t n)
+{
+    if (n < 10)
+        return 1;
+    if (n < 100)
+        return 2;
+    if (n < 1000)
+        return 3;
+}
 void print_num(uint8_t x, uint8_t y, uint32_t number)
 {
-    uint32_t inv = 0;
-    uint8_t i = 0;
-    while (number)
+    static uint8_t n = 0;
+    n = count_ifs(number);
+    for (byte i = 0; i < n; i++)
     {
-        inv = inv * 10 + number % 10;
-        number /= 10;
+        print_digit((i * 5) + x, y, (number / (int)pow(10, n - i - 1) % 10));
     }
-    while (inv)
-    {
-        print_digit((i * 5) + x, y, inv % 10);
-        inv /= 10;
-        i++;
-    }
-    i = 0;
 }
 void fps(const uint8_t seconds)
 {
@@ -174,7 +169,7 @@ MouseData move_mouse(uint16_t ms, uint8_t *buffer)
         halt = false;
         ms /= 100;
     }
-    
+
     if (!halt)
     {
         for (byte i = 0; i < sizeof(mouse); i++)
@@ -216,5 +211,4 @@ MouseData move_mouse(uint16_t ms, uint8_t *buffer)
         //  Serial.println(x);
         //  Serial.println(y);
     }
-    
 }

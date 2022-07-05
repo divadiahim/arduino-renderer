@@ -26,10 +26,9 @@ int main(void)
 {
     init();
     init_lcd();
-    Serial.begin(9600);
-    uint8_t i = 0;
-    bool ok = 0;
-    Serial.begin(9600);
+    // uint8_t i = 0;
+    // bool ok = 0;
+    // Serial.begin(9600);
     initialize();
 
     // update();
@@ -55,15 +54,11 @@ int main(void)
         //     {
         //         ok = 0;
         //     }
-
-        // plot_line(83 - i, 1, i, 30);
-        // drawTriangle(30, 0, 0, 30, 60, 30);
-        clear();
+        memset(framebuf, 0, sizeof(framebuf));//clear
         mouse_proj=move_mouse(20, buffer);
         draw_cube(&new_proj,&mouse_proj);
-        
         fps(5);
         update();
-        // delay(500);
+
     }
 }
