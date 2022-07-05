@@ -105,7 +105,7 @@ void print_digit(uint8_t x, uint8_t y, uint8_t number)
     }
     free(buffer);
 }
-static uint32_t count_ifs(uint32_t n)
+uint8_t count_ifs(uint32_t n)
 {
     if (n < 10)
         return 1;
