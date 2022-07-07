@@ -105,7 +105,7 @@ void print_digit(uint8_t x, uint8_t y, uint8_t number)
     }
     free(buffer);
 }
-uint8_t count_ifs(uint32_t n)
+static uint8_t count_ifs(uint32_t n)
 {
     if (n < 10)
         return 1;
@@ -113,6 +113,7 @@ uint8_t count_ifs(uint32_t n)
         return 2;
     if (n < 1000)
         return 3;
+    return 0;    
 }
 void print_num(uint8_t x, uint8_t y, uint32_t number)
 {
@@ -159,7 +160,7 @@ MouseData move_mouse(uint16_t ms, uint8_t *buffer)
     byte y_pixel = y - y_ * 8;
     // It is best if we declare millis() only once
     static byte px_overflow = 0x00;
-    if ((data.status == 0x0C) | halt == true)
+    if ((data.status == 0x0C) | (halt == true))
     {
         halt = true;
         ms *= 100;
@@ -180,7 +181,6 @@ MouseData move_mouse(uint16_t ms, uint8_t *buffer)
             framebuf[y_ + 1][x + i] |= px_overflow >> (8 - y_pixel);
         }
     }
-
     unsigned long now = millis();
     if (now - lMillis >= ms)
     {

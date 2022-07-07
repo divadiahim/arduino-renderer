@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include "mouse.h"
-#include "engine.h"
+#include "engine_fixed.h"
 #include "driver.h"
 void init_lcd()
 {
@@ -30,8 +30,14 @@ int main(void)
     // update();
     uint8_t *buffer = (uint8_t *)malloc(sizeof(mouse));
     memcpy_P(buffer, mouse, sizeof(mouse));
-    mat4 new_proj = _startE();
+    mat4_fixed new_proj = _fstartE();
     MouseData mouse_proj;
+
+    //togle inverse display mode
+    // PORTD = PORTD & ~(1 << LCD_DC);
+    // lcd_write(0x0D);
+    // PORTD = PORTD | (1 << LCD_DC);
+
     while (true)
     {
         //     if (i < 83 && ok == 0)
@@ -50,12 +56,10 @@ int main(void)
         //     {
         //         ok = 0;
         //     }
-        memset(framebuf, 0, sizeof(framebuf));//clear
-        mouse_proj=move_mouse(20, buffer);
-        draw_cube(&new_proj,&mouse_proj);
+        memset(framebuf, 0, sizeof(framebuf)); // clear
+        mouse_proj = move_mouse(20, buffer);
+        draw_cube_fixed(&new_proj);
         fps(5);
         update();
-        
-
     }
 }

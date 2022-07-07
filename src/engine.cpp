@@ -41,11 +41,15 @@ void draw_cube(mat4 *proj, MouseData *mice)
     }
     if ((*mice).wheel != 0)
     {
-        fFov += (float)mice->wheel*2.0f;
+        fFov += (float)mice->wheel * 2.0f;
         fFovRad = 1.0f / tanf(fFov * 0.5 / 180.0f * PI);
         (*proj).m[0][0] = faspect_r * fFovRad;
         (*proj).m[1][1] = fFovRad;
     }
+    // println the fthetax in degrees to the serial port
+    Serial.print("fthetax: ");
+    Serial.println((int)(fThetaX * 180.0f / PI) & 1000);
+
     // Rotation Z
     matRotZ.m[0][0] = cosf(fThetaX);
     matRotZ.m[0][1] = sinf(fThetaX);
@@ -104,6 +108,7 @@ void draw_cube(mat4 *proj, MouseData *mice)
         drawTriangle(triCalc.p[0].x, triCalc.p[0].y, triCalc.p[1].x, triCalc.p[1].y, triCalc.p[2].x, triCalc.p[2].y);
     }
 }
+
 mesh MeshCube =
     {
         // SOUTH
@@ -170,7 +175,7 @@ mesh MeshCube =
 
 mat4 _startE()
 {
-
+    
     mat4 proj;
     proj.m[0][0] = faspect_r * fFovRad;
     proj.m[1][1] = fFovRad;

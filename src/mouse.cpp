@@ -33,13 +33,13 @@ void waitForClockState(int expectedState)
         ;
 }
 
-void high(uint8_t pin)
+static inline void high(uint8_t pin)
 {
     pinMode(pin, INPUT);
     digitalWrite(pin, HIGH);
 }
 
-void low(uint8_t pin)
+static inline void low(uint8_t pin)
 {
     pinMode(pin, OUTPUT);
     digitalWrite(pin, LOW);
@@ -101,7 +101,7 @@ void writeByte(uint8_t data)
     low(_clockPin);
 }
 
-bool readBit()
+static inline bool readBit()
 {
     waitForClockState(LOW);
     bool bit = digitalRead(_dataPin);
@@ -140,7 +140,7 @@ char readByte()
     return data;
 }
 
-void writeAndReadAck(uint8_t data)
+static inline void writeAndReadAck(uint8_t data)
 {
     writeByte((char)data);
     readByte();
