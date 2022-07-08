@@ -2,12 +2,14 @@
 #define FUNCTIONS_H_INCLUDED
 #include <Arduino.h>
 #include "mouse.h"
-#define ffnear  0.1f
-#define fffar  100.0f
-#define ffaspect_r  (float)48 / (float)84
-typedef int32_t fixed;
+#define ffnear 0.1f
+#define fffar 100.0f
+#define ffaspect_r (float)48 / (float)84
+typedef int16_t fixed;
 extern float Fov;
 extern float FovRad;
+extern fixed ThetaX;
+extern fixed ThetaY;
 struct vec3d_fixed
 {
     fixed x, y, z;
@@ -26,17 +28,8 @@ struct mat4_fixed
 };
 
 
-struct vec3d
-{
-    float x, y, z;
-};
-struct triangle
-{
-    vec3d p[3];
-};
-
 extern mesh_fixed MeshCubeFixed;
 mat4_fixed _fstartE();
-void draw_cube_fixed(mat4_fixed *proj);
+void draw_cube_fixed(mat4_fixed *proj, MouseData *mice);
 
 #endif

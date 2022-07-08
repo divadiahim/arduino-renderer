@@ -31,6 +31,7 @@ int main(void)
     uint8_t *buffer = (uint8_t *)malloc(sizeof(mouse));
     memcpy_P(buffer, mouse, sizeof(mouse));
     mat4_fixed new_proj = _fstartE();
+   // mat4 new_proj_ = startE();
     MouseData mouse_proj;
 
     //togle inverse display mode
@@ -58,7 +59,7 @@ int main(void)
         //     }
         memset(framebuf, 0, sizeof(framebuf)); // clear
         mouse_proj = move_mouse(20, buffer);
-        draw_cube_fixed(&new_proj);
+        draw_cube_fixed(&new_proj,&mouse_proj);
         fps(5);
         update();
     }
