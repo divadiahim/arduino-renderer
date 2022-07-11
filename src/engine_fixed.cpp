@@ -122,7 +122,7 @@ void draw_cube_fixed(mat4_fixed *proj, MouseData *mice)
             triCalc.p[i].x = fixed_mult(triCalc.p[i].x, 10752);
             triCalc.p[i].y = fixed_mult(triCalc.p[i].y, 6144);
         }
-        drawTriangle(fixed_to_float(triCalc.p[0].x), fixed_to_float(triCalc.p[0].y), fixed_to_float(triCalc.p[1].x), fixed_to_float(triCalc.p[1].y), fixed_to_float(triCalc.p[2].x), fixed_to_float(triCalc.p[2].y));
+        drawTriangle(fixed_to_int(triCalc.p[0].x), fixed_to_int(triCalc.p[0].y), fixed_to_int(triCalc.p[1].x), fixed_to_int(triCalc.p[1].y), fixed_to_int(triCalc.p[2].x), fixed_to_int(triCalc.p[2].y));
         // drawTriangle(triCalcfloat.p[0].x, triCalcfloat.p[0].y, triCalcfloat.p[1].x, triCalcfloat.p[1].y, triCalcfloat.p[2].x, triCalcfloat.p[2].y);
     }
 }
