@@ -1,7 +1,6 @@
 #include <engine_fixed.h>
 #include <math.h>
 #include <driver.h>
-#include "MemoryFree.h"
 static inline int16_t to_fixed(float f)
 {
     return f * ((int16_t)1 << 8);
@@ -18,14 +17,16 @@ static inline int16_t fixed_div(int16_t a, int16_t b)
 {
     return (a << 8) / b;
 }
+static inline uint8_t fixed_to_int(int16_t f)
+{
+    return (uint8_t)(f>>8);//for tringle draw
+}
 void MultiplyMatVec(vec3d_fixed *vec_in, vec3d_fixed *vec_out, mat4_fixed *m)
 {
     vec_out->x = fixed_mult(vec_in->x, m->m[0][0]) + fixed_mult(vec_in->y, m->m[1][0]) + fixed_mult(vec_in->z, m->m[2][0]) + m->m[3][0];
     vec_out->y = fixed_mult(vec_in->x, m->m[0][1]) + fixed_mult(vec_in->y, m->m[1][1]) + fixed_mult(vec_in->z, m->m[2][1]) + m->m[3][1];
     vec_out->z = fixed_mult(vec_in->x, m->m[0][2]) + fixed_mult(vec_in->y, m->m[1][2]) + fixed_mult(vec_in->z, m->m[2][2]) + m->m[3][2];
     // int16_t w = fixed_mult(vec_in->x , m->m[0][3]) + fixed_mult(vec_in->y , m->m[1][3]) + fixed_mult(vec_in->z, m->m[2][3]) + m->m[3][3];
-  
- 
 }
 void MultiplyMatVecProj(vec3d_fixed *vec_in, vec3d_fixed *vec_out, mat4_fixed *m)
 {
@@ -50,25 +51,20 @@ void draw_cube_fixed(mat4_fixed *proj, MouseData *mice)
     static mat4_fixed matRotZ, matRotX;
     static float fThetaX = 0.0f;
     static float fThetaY = 0.0f;
-
     if (((*mice).status & 0x0F) == 0x09)
     {
         ThetaX -= fixed_mult(2560, ((*mice).position.x));
         ThetaY -= fixed_mult(2560, ((*mice).position.y));
     }
-
-    // if ((*mice).wheel != 0)
-    // {
-    //     fFov += (float)mice->wheel * 2.0f;
-    //     fFovRad = 1.0f / tanf(fFov * 0.5 / 180.0f * PI);
-    //     (*proj).m[0][0] = faspect_r * fFovRad;
-    //     (*proj).m[1][1] = fFovRad;
-    // }
-
+    if ((*mice).wheel != 0)
+    {
+        Fov += (float)mice->wheel * 2.0f;
+        FovRad = 1.0f / tanf(Fov * 0.5 / 180.0f * PI);
+        (*proj).m[0][0] = to_fixed(ffaspect_r * FovRad);
+        (*proj).m[1][1] = to_fixed(FovRad);
+    }
     fThetaX = fixed_to_float(ThetaX);
     fThetaY = fixed_to_float(ThetaY);
-
-    // fThetaY+=0.04f;
     //  Rotation
     matRotZ.m[0][0] = to_fixed(cosf(fThetaX));
     matRotZ.m[0][1] = to_fixed(sinf(fThetaX));
@@ -111,7 +107,7 @@ void draw_cube_fixed(mat4_fixed *proj, MouseData *mice)
         MultiplyMatVec(&triRotatedZ.p[1], &triRotatedZX.p[1], &matRotX);
         MultiplyMatVec(&triRotatedZ.p[2], &triRotatedZX.p[2], &matRotX);
 
-        //  //Rotate in X-Axis
+        //  //Rotate in Y-Axis
         // MultiplyMatVec(&triRotatedZX.p[0], &triRotatedZXY.p[0], &matRotY);
         // MultiplyMatVec(&triRotatedZX.p[1], &triRotatedZXY.p[1], &matRotY);
         // MultiplyMatVec(&triRotatedZX.p[2], &triRotatedZXY.p[2], &matRotY);
@@ -119,23 +115,12 @@ void draw_cube_fixed(mat4_fixed *proj, MouseData *mice)
         MultiplyMatVecProj(&triRotatedZX.p[0], &triCalc.p[0], proj);
         MultiplyMatVecProj(&triRotatedZX.p[1], &triCalc.p[1], proj);
         MultiplyMatVecProj(&triRotatedZX.p[2], &triCalc.p[2], proj);
-
-        // Serial.print(triCalc.p[0].x);
-        // Serial.print(" ");
-        // Serial.print(triCalc.p[0].y);
-        // Serial.print(" ");
-        // Serial.print(triCalc.p[0].z);
-        // Serial.print("\n");
-        // scale the view
-        // make tricalc floating
         for (byte i = 0; i < 3; i++)
         {
             triCalc.p[i].x += 256;
             triCalc.p[i].y += 256;
             triCalc.p[i].x = fixed_mult(triCalc.p[i].x, 10752);
             triCalc.p[i].y = fixed_mult(triCalc.p[i].y, 6144);
-            // triCalc.p[i].x *= 0.5 * (float)84;
-            // triCalc.p[i].y *= 0.5 * (float)48;
         }
         drawTriangle(fixed_to_float(triCalc.p[0].x), fixed_to_float(triCalc.p[0].y), fixed_to_float(triCalc.p[1].x), fixed_to_float(triCalc.p[1].y), fixed_to_float(triCalc.p[2].x), fixed_to_float(triCalc.p[2].y));
         // drawTriangle(triCalcfloat.p[0].x, triCalcfloat.p[0].y, triCalcfloat.p[1].x, triCalcfloat.p[1].y, triCalcfloat.p[2].x, triCalcfloat.p[2].y);
@@ -206,7 +191,7 @@ mesh_fixed MeshCubeFixed =
 };
 mat4_fixed _fstartE()
 {
-    // for (byte i = 0; i < 12; i++)
+    // for (byte i = 0; i < 12; i++)///enable this if you want to have mesh represented with floats
     // {
     //     for (byte j = 0; j < 3; j++)
     //     {
@@ -215,7 +200,6 @@ mat4_fixed _fstartE()
     //         MeshCube_fixed.tris[i].p[j].z = to_fixed(MeshCube.tris[i].p[j].z);
     //     }
     // }
-
     mat4_fixed proj;
     proj.m[0][0] = to_fixed(ffaspect_r * FovRad);
     proj.m[1][1] = to_fixed(FovRad);
@@ -223,25 +207,5 @@ mat4_fixed _fstartE()
     proj.m[2][3] = 256;
     proj.m[3][2] = to_fixed((-fffar * ffnear) / (fffar - ffnear));
     proj.m[3][3] = 0;
-    for (byte z = 0; z < 12; z++)
-        for (int i = 0; i < 3; i++)
-        {
-            // MeshCubeFixed.tris[z].p[i].z += to_fixed(10.0f);
-            Serial.println(MeshCubeFixed.tris[z].p[i].z);
-        }
-    // print to the serial port the proj matrix
-    // for (int i = 0; i < 4; i++)
-    // {
-    //     for (int j = 0; j < 4; j++)
-    //     {
-    //         Serial.print(i);
-    //         Serial.print(" ");
-    //         Serial.print(j);
-    //         Serial.print(" ");
-    //         Serial.print(proj.m[i][j]);
-    //         Serial.print(" ");
-    //         Serial.println();
-    //     }
-    // }
     return proj;
 }

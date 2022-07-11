@@ -26,8 +26,6 @@ struct mat4_fixed
 {
     fixed m[4][4] = {0};
 };
-
-
 extern mesh_fixed MeshCubeFixed;
 mat4_fixed _fstartE();
 void draw_cube_fixed(mat4_fixed *proj, MouseData *mice);
