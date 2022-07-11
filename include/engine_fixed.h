@@ -2,7 +2,7 @@
 #define FUNCTIONS_H_INCLUDED
 #include <Arduino.h>
 #include "mouse.h"
-#define ffnear 0.1f
+#define ffnear 0.5f
 #define fffar 100.0f
 #define ffaspect_r (float)48 / (float)84
 typedef int16_t fixed;

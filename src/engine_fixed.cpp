@@ -12,41 +12,37 @@ static inline float fixed_to_float(int16_t f)
 }
 static inline int16_t fixed_mult(int16_t a, int16_t b)
 {
-    return (int32_t)a * (int32_t)b >> 8;
+    return (int32_t)a * b >> 8;
 }
 static inline int16_t fixed_div(int16_t a, int16_t b)
 {
-    return ((int32_t)a << 8) / (int32_t)b;
+    return (a << 8) / b;
 }
 void MultiplyMatVec(vec3d_fixed *vec_in, vec3d_fixed *vec_out, mat4_fixed *m)
 {
     vec_out->x = fixed_mult(vec_in->x, m->m[0][0]) + fixed_mult(vec_in->y, m->m[1][0]) + fixed_mult(vec_in->z, m->m[2][0]) + m->m[3][0];
     vec_out->y = fixed_mult(vec_in->x, m->m[0][1]) + fixed_mult(vec_in->y, m->m[1][1]) + fixed_mult(vec_in->z, m->m[2][1]) + m->m[3][1];
     vec_out->z = fixed_mult(vec_in->x, m->m[0][2]) + fixed_mult(vec_in->y, m->m[1][2]) + fixed_mult(vec_in->z, m->m[2][2]) + m->m[3][2];
-    int16_t w = fixed_mult(vec_in->z, m->m[2][3]) + m->m[3][3];
-    if (!w)
-    {
-        vec_out->x = fixed_div(vec_out->x, w);
-        vec_out->y = fixed_div(vec_out->y, w);
-        vec_out->z = fixed_div(vec_out->z, w);
-    }
+    // int16_t w = fixed_mult(vec_in->x , m->m[0][3]) + fixed_mult(vec_in->y , m->m[1][3]) + fixed_mult(vec_in->z, m->m[2][3]) + m->m[3][3];
+  
+ 
 }
 void MultiplyMatVecProj(vec3d_fixed *vec_in, vec3d_fixed *vec_out, mat4_fixed *m)
 {
     vec_out->x = fixed_mult(vec_in->x, m->m[0][0]);
     vec_out->y = fixed_mult(vec_in->y, m->m[1][1]);
     vec_out->z = fixed_mult(vec_in->z, m->m[2][2]) + m->m[3][2];
-    int16_t w = fixed_mult(vec_in->z, m->m[2][3]) + m->m[3][3];
-    if (!w)
-    {
-        vec_out->x = fixed_div(vec_out->x, w);
-        vec_out->y = fixed_div(vec_out->y, w);
-        vec_out->z = fixed_div(vec_out->z, w);
-    }
+    // int16_t w = fixed_mult(vec_in->z, m->m[2][3]) + m->m[3][3];
+    // if (fixed_to_float(w) != 0.00f)
+    // {
+    //     vec_out->x = fixed_div(vec_out->x, w);
+    //     vec_out->y = fixed_div(vec_out->y, w);
+    //     vec_out->z = fixed_div(vec_out->z, w);
+    // }
 }
 
-float Fov = 125.0f;
-float FovRad = 1.0f / tanf(Fov * 0.5 / 180.0f * PI);
+float Fov = 120.0f;
+float FovRad = (1.0f / tanf(Fov * 0.5 / 180.0f * PI));
 fixed ThetaX = 0;
 fixed ThetaY = 0;
 void draw_cube_fixed(mat4_fixed *proj, MouseData *mice)
@@ -54,11 +50,12 @@ void draw_cube_fixed(mat4_fixed *proj, MouseData *mice)
     static mat4_fixed matRotZ, matRotX;
     static float fThetaX = 0.0f;
     static float fThetaY = 0.0f;
-    // if (((*mice).status & 0x0F) == 0x09)
-    // {
-    //     ThetaX -= fixed_mult(2560, ((*mice).position.x));
-    //     ThetaY += fixed_mult(2560, ((*mice).position.y));
-    // }
+
+    if (((*mice).status & 0x0F) == 0x09)
+    {
+        ThetaX -= fixed_mult(2560, ((*mice).position.x));
+        ThetaY -= fixed_mult(2560, ((*mice).position.y));
+    }
 
     // if ((*mice).wheel != 0)
     // {
@@ -67,12 +64,10 @@ void draw_cube_fixed(mat4_fixed *proj, MouseData *mice)
     //     (*proj).m[0][0] = faspect_r * fFovRad;
     //     (*proj).m[1][1] = fFovRad;
     // }
-    ThetaY += to_fixed(0.04);
-    if (ThetaY >=199 && ThetaY <= 204)
-        ThetaY = 210;
+
     fThetaX = fixed_to_float(ThetaX);
     fThetaY = fixed_to_float(ThetaY);
-  
+
     // fThetaY+=0.04f;
     //  Rotation
     matRotZ.m[0][0] = to_fixed(cosf(fThetaX));
@@ -91,7 +86,7 @@ void draw_cube_fixed(mat4_fixed *proj, MouseData *mice)
     // matRotY.m[2][0] = -sinf(fThetaX);
     // matRotY.m[2][2] = cosf(fThetaX);
     // matRotY.m[3][3] = 1;
-    Serial.println(fThetaY);
+
     // Rotation X
     matRotX.m[0][0] = 256;
     matRotX.m[1][1] = to_fixed(cosf(fThetaY));
@@ -105,25 +100,25 @@ void draw_cube_fixed(mat4_fixed *proj, MouseData *mice)
         triangle_fixed triCalc, triRotatedZ, triRotatedZX;
 
         // Rotate in Z-Axis
-        MultiplyMatVec(&tri.p[0], &triRotatedZ.p[0], &matRotX);
-        MultiplyMatVec(&tri.p[1], &triRotatedZ.p[1], &matRotX);
-        MultiplyMatVec(&tri.p[2], &triRotatedZ.p[2], &matRotX);
+        MultiplyMatVec(&tri.p[0], &triRotatedZ.p[0], &matRotZ);
+        MultiplyMatVec(&tri.p[1], &triRotatedZ.p[1], &matRotZ);
+        MultiplyMatVec(&tri.p[2], &triRotatedZ.p[2], &matRotZ);
         // print matRotX
         //  Serial.println("matRotX");
 
         // Rotate in X-Axis
-        // MultiplyMatVec(&triRotatedZ.p[0], &triRotatedZX.p[0], &matRotX);
-        // MultiplyMatVec(&triRotatedZ.p[1], &triRotatedZX.p[1], &matRotX);
-        // MultiplyMatVec(&triRotatedZ.p[2], &triRotatedZX.p[2], &matRotX);
+        MultiplyMatVec(&triRotatedZ.p[0], &triRotatedZX.p[0], &matRotX);
+        MultiplyMatVec(&triRotatedZ.p[1], &triRotatedZX.p[1], &matRotX);
+        MultiplyMatVec(&triRotatedZ.p[2], &triRotatedZX.p[2], &matRotX);
 
         //  //Rotate in X-Axis
         // MultiplyMatVec(&triRotatedZX.p[0], &triRotatedZXY.p[0], &matRotY);
         // MultiplyMatVec(&triRotatedZX.p[1], &triRotatedZXY.p[1], &matRotY);
         // MultiplyMatVec(&triRotatedZX.p[2], &triRotatedZXY.p[2], &matRotY);
 
-        MultiplyMatVecProj(&triRotatedZ.p[0], &triCalc.p[0], proj);
-        MultiplyMatVecProj(&triRotatedZ.p[1], &triCalc.p[1], proj);
-        MultiplyMatVecProj(&triRotatedZ.p[2], &triCalc.p[2], proj);
+        MultiplyMatVecProj(&triRotatedZX.p[0], &triCalc.p[0], proj);
+        MultiplyMatVecProj(&triRotatedZX.p[1], &triCalc.p[1], proj);
+        MultiplyMatVecProj(&triRotatedZX.p[2], &triCalc.p[2], proj);
 
         // Serial.print(triCalc.p[0].x);
         // Serial.print(" ");
@@ -223,7 +218,6 @@ mat4_fixed _fstartE()
 
     mat4_fixed proj;
     proj.m[0][0] = to_fixed(ffaspect_r * FovRad);
-    Serial.println(proj.m[0][0]);
     proj.m[1][1] = to_fixed(FovRad);
     proj.m[2][2] = to_fixed(fffar / (fffar - ffnear));
     proj.m[2][3] = 256;
@@ -232,7 +226,8 @@ mat4_fixed _fstartE()
     for (byte z = 0; z < 12; z++)
         for (int i = 0; i < 3; i++)
         {
-            MeshCubeFixed.tris[z].p[i].z += to_fixed(0.01f);
+            // MeshCubeFixed.tris[z].p[i].z += to_fixed(10.0f);
+            Serial.println(MeshCubeFixed.tris[z].p[i].z);
         }
     // print to the serial port the proj matrix
     // for (int i = 0; i < 4; i++)
