@@ -1,5 +1,4 @@
 #include <engine_fixed.h>
-#include <math.h>
 #include <driver.h>
 static inline int16_t to_fixed(float f)
 {
@@ -19,8 +18,59 @@ static inline int16_t fixed_div(int16_t a, int16_t b)
 }
 static inline uint8_t fixed_to_int(int16_t f)
 {
-    return (uint8_t)(f>>8);//for tringle draw
+    return (uint8_t)(f >> 8); // for tringle draw
 }
+int16_t fpsin(int16_t i)
+{
+    /* Convert (signed) input to a value between 0 and 8192. (8192 is pi/2, which is the region of the curve fit). */
+    /* ------------------------------------------------------------------- */
+    i <<= 1;
+    uint8_t c = i < 0; // set carry for output pos/neg
+
+    if (i == (i | 0x4000)) // flip input value to corresponding value in range [0..8192)
+        i = (1 << 15) - i;
+    i = (i & 0x7FFF) >> 1;
+    /* ------------------------------------------------------------------- */
+
+    /* The following section implements the formula:
+     = y * 2^-n * ( A1 - 2^(q-p)* y * 2^-n * y * 2^-n * [B1 - 2^-r * y * 2^-n * C1 * y]) * 2^(a-q)
+    Where the constants are defined as follows:
+    */
+    // enum userchoice
+    // {
+    //     Toyota = 1,
+    //     Lamborghini,
+    //     Ferrari,
+    //     Holden,
+    //     RangeRover
+    // };
+
+    enum 
+    {
+        A1 = 3370945099UL,
+        b1= 2746362156UL,
+        C1 = 292421UL
+    };
+    enum
+    {
+        n = 13,
+        p = 32,
+        q = 31,
+        r = 3,
+        a = 12
+    };
+
+    uint32_t y = (C1 * ((uint32_t)i)) >> n;
+    y = b1 - (((uint32_t)i * y) >> r);
+    y = (uint32_t)i * (y >> n);
+    y = (uint32_t)i * (y >> n);
+    y = A1 - (y >> (p - q));
+    y = (uint32_t)i * (y >> n);
+    y = (y + (1UL << (q - a - 1))) >> (q - a); // Rounding
+
+    return c ? -y : y;
+}
+#define fpcos(i) fpsin((int16_t)(((uint16_t)(i)) + 8192U))
 void MultiplyMatVec(vec3d_fixed *vec_in, vec3d_fixed *vec_out, mat4_fixed *m)
 {
     vec_out->x = fixed_mult(vec_in->x, m->m[0][0]) + fixed_mult(vec_in->y, m->m[1][0]) + fixed_mult(vec_in->z, m->m[2][0]) + m->m[3][0];
@@ -48,7 +98,7 @@ fixed ThetaX = 0;
 fixed ThetaY = 0;
 void draw_cube_fixed(mat4_fixed *proj, MouseData *mice)
 {
-    static mat4_fixed matRotZ, matRotX;
+    static mat4_fixed matRotZ, matRotX, matt;
     static float fThetaX = 0.0f;
     static float fThetaY = 0.0f;
     if (((*mice).status & 0x0F) == 0x09)
@@ -65,13 +115,20 @@ void draw_cube_fixed(mat4_fixed *proj, MouseData *mice)
     }
     fThetaX = fixed_to_float(ThetaX);
     fThetaY = fixed_to_float(ThetaY);
-    //  Rotation
+     //Rotation
     matRotZ.m[0][0] = to_fixed(cosf(fThetaX));
     matRotZ.m[0][1] = to_fixed(sinf(fThetaX));
     matRotZ.m[1][0] = to_fixed(-sinf(fThetaX));
     matRotZ.m[1][1] = to_fixed(cosf(fThetaX));
     matRotZ.m[2][2] = 256;
     matRotZ.m[3][3] = 256;
+
+    // matRotZ.m[0][0] = fpcos(ThetaX<<4)>>4;
+    // matRotZ.m[0][1] = fpsin(ThetaX<<4)>>4;
+    // matRotZ.m[1][0] = fpsin(-ThetaX<<4)>>4;
+    // matRotZ.m[1][1] = fpcos(ThetaX<<4)>>4;
+    // matRotZ.m[2][2] = 256;
+    // matRotZ.m[3][3] = 256;
 
     // Serial.println(to_fixed(-sinf(fThetaX)));
 
@@ -84,7 +141,7 @@ void draw_cube_fixed(mat4_fixed *proj, MouseData *mice)
     // matRotY.m[3][3] = 1;
 
     // Rotation X
-    matRotX.m[0][0] = 256;
+    matRotX.m[0][0] = 256; 
     matRotX.m[1][1] = to_fixed(cosf(fThetaY));
     matRotX.m[1][2] = to_fixed(sinf(fThetaY));
     matRotX.m[2][1] = to_fixed(-sinf(fThetaY));
@@ -111,19 +168,22 @@ void draw_cube_fixed(mat4_fixed *proj, MouseData *mice)
         // MultiplyMatVec(&triRotatedZX.p[0], &triRotatedZXY.p[0], &matRotY);
         // MultiplyMatVec(&triRotatedZX.p[1], &triRotatedZXY.p[1], &matRotY);
         // MultiplyMatVec(&triRotatedZX.p[2], &triRotatedZXY.p[2], &matRotY);
-
+        
         MultiplyMatVecProj(&triRotatedZX.p[0], &triCalc.p[0], proj);
         MultiplyMatVecProj(&triRotatedZX.p[1], &triCalc.p[1], proj);
         MultiplyMatVecProj(&triRotatedZX.p[2], &triCalc.p[2], proj);
-        for (byte i = 0; i < 3; i++)
+        for (byte i = 0; i < 3; i++) // need to scale because the proj matrix gives results between -1 and 1
         {
             triCalc.p[i].x += 256;
             triCalc.p[i].y += 256;
             triCalc.p[i].x = fixed_mult(triCalc.p[i].x, 10752);
             triCalc.p[i].y = fixed_mult(triCalc.p[i].y, 6144);
         }
+        //check that no points repeat
+
         drawTriangle(fixed_to_int(triCalc.p[0].x), fixed_to_int(triCalc.p[0].y), fixed_to_int(triCalc.p[1].x), fixed_to_int(triCalc.p[1].y), fixed_to_int(triCalc.p[2].x), fixed_to_int(triCalc.p[2].y));
         // drawTriangle(triCalcfloat.p[0].x, triCalcfloat.p[0].y, triCalcfloat.p[1].x, triCalcfloat.p[1].y, triCalcfloat.p[2].x, triCalcfloat.p[2].y);
+     
     }
 }
 mesh_fixed MeshCubeFixed =

@@ -2,7 +2,6 @@
 #define INTELLI_MOUSE 3
 #define SCALING_1_TO_1 0xE6
 #define RESOLUTION_8_COUNTS_PER_MM 3
-
 enum Commands
 {
     SET_RESOLUTION = 0xE8,

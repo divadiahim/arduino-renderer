@@ -22,18 +22,13 @@ int main(void)
 {
     init();
     init_lcd();
-    // uint8_t i = 0;
-    // bool ok = 0;
     Serial.begin(9600);
     initialize();
-
-    // update();
     uint8_t *buffer = (uint8_t *)malloc(sizeof(mouse));
     memcpy_P(buffer, mouse, sizeof(mouse));
     mat4_fixed new_proj = _fstartE();
    // mat4 new_proj_ = startE();
     MouseData mouse_proj;
-
     //togle inverse display mode
     // PORTD = PORTD & ~(1 << LCD_DC);
     // lcd_write(0x0D);
@@ -41,25 +36,13 @@ int main(void)
 
     while (true)
     {
-        //     if (i < 83 && ok == 0)
-        //     {
-        //         i++;
-        //     }
-        //     if (i == 83 && ok == 0)
-        //     {
-        //         ok = 1;
-        //     }
-        //     if (i <= 83 && ok == 1)
-        //     {
-        //         i--;
-        //     }
-        //     if (i == 1 && ok == 1)
-        //     {
-        //         ok = 0;
-        //     }
         memset(framebuf, 0, sizeof(framebuf)); // clear
-        mouse_proj = move_mouse(20, buffer);
+        mouse_proj = move_mouse(40, buffer);
         draw_cube_fixed(&new_proj,&mouse_proj);
+       //draw trinagle
+     // drawTriangle(28,37,55,10,55,37);
+   //  drawTriangle(28,37,28,10,55,10);
+       // plot_line(28,37,55,10);
         fps(5);
         update();
     }

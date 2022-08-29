@@ -25,9 +25,15 @@ void clear_ram()
         lcd_write(0x00);
     }
 }
-void clear()
+// void clear()
+// {
+//     memset(framebuf, 0, sizeof(framebuf));
+// }
+void swap(uint8_t* a, uint8_t* b)
 {
-    memset(framebuf, 0, sizeof(framebuf));
+    *a ^= *b;
+    *b ^= *a;
+    *a ^= *b;
 }
 void drawpixel(uint8_t x, uint8_t y) // this is using the command mode | chnges the memeory adress//legagy broken code
 {
@@ -49,7 +55,8 @@ void put_pixel(uint8_t x, uint8_t y)
         framebuf[y_][x] |= (0x01 << y_pixel);
 }
 void update()
-{
+{ 
+   
     for (int i = 0; i < 6; i++)
     {
         for (int j = 0; j < 84; j++)
@@ -57,6 +64,7 @@ void update()
             lcd_write(framebuf[i][j]);
         }
     }
+   
 }
 void plot_line(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1)
 {
@@ -113,7 +121,7 @@ static uint8_t count_ifs(uint32_t n)
         return 2;
     if (n < 1000)
         return 3;
-    return 0;    
+    return 0;
 }
 void print_num(uint8_t x, uint8_t y, uint32_t number)
 {
@@ -143,11 +151,105 @@ void fps(const uint8_t seconds)
     }
     print_num(66, 0, framesPerSecond);
 }
+// void dot_product(uint8_t ax, uint8_t ay, uint8_t bx, uint8_t by)
+// {
+//     return (ax * bx)+ (ay * by);
+// }
+void interpolate_idk(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, uint8_t x, uint8_t y)
+{
+    uint8_t dx = x1 - x0;
+    uint8_t dy = y1 - y0;
+    uint8_t d = (dx * dx) + (dy * dy);
+    uint8_t u = (((x - x0) * (x1 - x0)) + ((y - y0) * (y1 - y0))) / d;
+    uint8_t xi = x0 + (u * (x1 - x0));
+    uint8_t yi = y0 + (u * (y1 - y0));
+    put_pixel(xi, yi);
+}
+uint16_t interpolate(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t y)
+{
+    return x0 + (y-y0) * (x1-x0)/(y1-y0);
+}
+inline void rasterizeflattop(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, uint8_t x3, uint8_t y3, uint8_t z)
+{
+    static uint8_t a,b;
+    static uint8_t p;
+    for (p = y1; p <= y2; p++)
+    {
+        
+        {
+            a = interpolate(x1, y1, x2, y2, p);
+            b = interpolate(x1, y1, x3, y3, p);
+        }
+        // z=2-z;
+        // if(b<a)
+        // swap(&a,&b);
+        // for(uint8_t i = a+z; i <= b; i+=2)
+        // { 
+        //    put_pixel(i,p);
+        // }
+        plot_line(a, p, b, p);
+    }
+}
+
+inline void rasterizeflatbottom(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, uint8_t x3, uint8_t y3, uint8_t z)
+{
+    static uint8_t a,b;
+    static uint8_t p;
+ 
+    for (p = y3; p >= y1; p--)
+    {
+        a = interpolate(x1, y1, x3, y3, p);
+        b = interpolate(x2, y2, x3, y3, p);
+       plot_line(a, p, b, p);
+        // z=3-z;
+        // if(b<a)
+        // swap(&a,&b);
+        // for(uint8_t i = a+z; i <= b; i+=2)
+        // { 
+        //    put_pixel(i,p);
+        // }
+    }
+}
 void drawTriangle(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, uint8_t x3, uint8_t y3)
 {
+    //prin the triangle coordinates to serial
+    // Serial.print(x1);
+    // Serial.print(",");
+    // Serial.print(y1);
+    // Serial.print(",");
+    // Serial.print(x2);
+    // Serial.print(",");
+    // Serial.print(y2);
+    // Serial.print(",");
+    // Serial.print(x3);
+    // Serial.print(",");
+    // Serial.print(y3);
+    // Serial.println();
+
     plot_line(x1, y1, x2, y2);
     plot_line(x1, y1, x3, y3);
     plot_line(x2, y2, x3, y3);
+    if (y2 < y1) { swap(&y2, &y1),swap(&x2, &x1); }
+    if (y3 < y1) { swap(&y3, &y1),swap(&x3, &x1); }
+    if (y3 < y2) { swap(&y3, &y2),swap(&x3, &x2); }
+    if(y2 == y1)
+    {
+        rasterizeflatbottom(x1, y1, x2, y2, x3, y3, 3);
+    }
+    else if(y2 == y3)
+    {
+        rasterizeflattop(x1, y1, x2, y2, x3, y3, 0);
+    }
+    else 
+    {
+        uint8_t x4 ,y4;
+        y4 = y2;
+        // x4 = x1 + ((y2 - y1) / (y3 - y1)) * (x3 - x1);// teorema lui thales ba 
+        x4 = interpolate(x1, y1, x3, y3, y4);
+        rasterizeflattop(x1, y1, x2, y2, x4, y4, 0);
+        rasterizeflatbottom(x2, y2, x4, y4, x3, y3, 3);
+    }
+    
 }
 MouseData move_mouse(uint16_t ms, uint8_t *buffer)
 {
@@ -212,11 +314,11 @@ MouseData move_mouse(uint16_t ms, uint8_t *buffer)
         //  Serial.println(y);
     }
 }
-//Never goona give you up
-//Never goona let you down
-//Never goona run around and desert you
-//Never goona make you cry
-//Never goona say goodbye
-//Never goona tell a lie and hurt you
-//Never goona turn you around
-//Never goona cut you down
+// Never goona give you up
+// Never goona let you down
+// Never goona run around and desert you
+// Never goona make you cry
+// Never goona say goodbye
+// Never goona tell a lie and hurt you
+// Never goona turn you around
+// Never goona cut you down
