@@ -180,14 +180,14 @@ inline void rasterizeflattop(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, uin
             a = interpolate(x1, y1, x2, y2, p);
             b = interpolate(x1, y1, x3, y3, p);
         }
-        // z=2-z;
+        // z=1-z;
         // if(b<a)
         // swap(&a,&b);
         // for(uint8_t i = a+z; i <= b; i+=2)
         // { 
         //    put_pixel(i,p);
         // }
-        plot_line(a, p, b, p);
+       plot_line(a, p, b, p);
     }
 }
 
@@ -200,10 +200,10 @@ inline void rasterizeflatbottom(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, 
     {
         a = interpolate(x1, y1, x3, y3, p);
         b = interpolate(x2, y2, x3, y3, p);
-       plot_line(a, p, b, p);
-        // z=3-z;
-        // if(b<a)
-        // swap(&a,&b);
+        plot_line(a, p, b, p);
+        // z=1-z;
+        // if(b < a)
+        // swap(&a , &b);
         // for(uint8_t i = a+z; i <= b; i+=2)
         // { 
         //    put_pixel(i,p);
@@ -229,26 +229,26 @@ void drawTriangle(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, uint8_t x3, ui
     plot_line(x1, y1, x2, y2);
     plot_line(x1, y1, x3, y3);
     plot_line(x2, y2, x3, y3);
-    if (y2 < y1) { swap(&y2, &y1),swap(&x2, &x1); }
-    if (y3 < y1) { swap(&y3, &y1),swap(&x3, &x1); }
-    if (y3 < y2) { swap(&y3, &y2),swap(&x3, &x2); }
-    if(y2 == y1)
-    {
-        rasterizeflatbottom(x1, y1, x2, y2, x3, y3, 3);
-    }
-    else if(y2 == y3)
-    {
-        rasterizeflattop(x1, y1, x2, y2, x3, y3, 0);
-    }
-    else 
-    {
-        uint8_t x4 ,y4;
-        y4 = y2;
-        // x4 = x1 + ((y2 - y1) / (y3 - y1)) * (x3 - x1);// teorema lui thales ba 
-        x4 = interpolate(x1, y1, x3, y3, y4);
-        rasterizeflattop(x1, y1, x2, y2, x4, y4, 0);
-        rasterizeflatbottom(x2, y2, x4, y4, x3, y3, 3);
-    }
+    // if (y2 < y1) { swap(&y2, &y1),swap(&x2, &x1); }
+    // if (y3 < y1) { swap(&y3, &y1),swap(&x3, &x1); }
+    // if (y3 < y2) { swap(&y3, &y2),swap(&x3, &x2); }
+    // if(y2 == y1)
+    // {
+    //     rasterizeflatbottom(x1, y1, x2, y2, x3, y3, 0);
+    // }
+    // else if(y2 == y3)
+    // {
+    //     rasterizeflattop(x1, y1, x2, y2, x3, y3, 0);
+    // }
+    // else 
+    // {
+    //     uint8_t x4 ,y4;
+    //     y4 = y2;
+    //     //x4 = x1 + ((y2 - y1) / (y3 - y1)) * (x3 - x1);// teorema lui thales ba 
+    //     x4 = interpolate(x1, y1, x3, y3, y4);
+    //     rasterizeflattop(x1, y1, x2, y2, x4, y4, 0);
+    //     rasterizeflatbottom(x2, y2, x4, y4, x3, y3, 0);
+    // }
     
 }
 MouseData move_mouse(uint16_t ms, uint8_t *buffer)

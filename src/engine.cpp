@@ -6,13 +6,13 @@ void MultiplyMatVec(vec3d *vec_in, vec3d *vec_out, mat4 *m)
     vec_out->x = vec_in->x * m->m[0][0] + vec_in->y * m->m[1][0] + vec_in->z * m->m[2][0] + m->m[3][0];
     vec_out->y = vec_in->x * m->m[0][1] + vec_in->y * m->m[1][1] + vec_in->z * m->m[2][1] + m->m[3][1];
     vec_out->z = vec_in->x * m->m[0][2] + vec_in->y * m->m[1][2] + vec_in->z * m->m[2][2] + m->m[3][2];
-    float w = vec_in->z * m->m[2][3] + m->m[3][3]; // vec_in->x * m->m[0][3] + vec_in->y * m->m[1][3] +
-    if (!w)
-    {
-        vec_out->x /= w;
-        vec_out->y /= w;
-        vec_out->z /= w;
-    }
+    // float w = vec_in->z * m->m[2][3] + m->m[3][3]; // vec_in->x * m->m[0][3] + vec_in->y * m->m[1][3] +
+    // if (!w)
+    // {
+    //     vec_out->x /= w;
+    //     vec_out->y /= w;
+    //     vec_out->z /= w;
+    // }
 }
 void MultiplyMatVecProj(vec3d *vec_in, vec3d *vec_out, mat4 *m)
 {
@@ -20,17 +20,18 @@ void MultiplyMatVecProj(vec3d *vec_in, vec3d *vec_out, mat4 *m)
     vec_out->y = vec_in->y * m->m[1][1];
     vec_out->z = vec_in->z * m->m[2][2] + m->m[3][2];
     float w = vec_in->z * m->m[2][3] + m->m[3][3];
-    if (!w)
-    {
-        vec_out->x /= w;
-        vec_out->y /= w;
-        vec_out->z /= w;
-    }
+    // if (!w)
+    // {
+    //     vec_out->x /= w;
+    //     vec_out->y /= w;
+    //     vec_out->z /= w;
+    // }
 }
 float fThetaX = 0;
 float fThetaY = 0;
 float fFov = 120.0f;
 float fFovRad = 1.0f / tanf(fFov * 0.5 / 180.0f * PI);
+vec3d vCamera;
 void draw_cube(mat4 *proj, MouseData *mice)
 {
     mat4 matRotZ, matRotX;
@@ -76,7 +77,7 @@ void draw_cube(mat4 *proj, MouseData *mice)
 
     for (auto tri : MeshCube.tris)
     {
-        triangle triCalc, triRotatedZ, triRotatedZX;
+        triangle triCalc, triRotatedZ, triRotatedZX, triTranslated;
 
         // Rotate in Z-Axis
         MultiplyMatVec(&tri.p[0], &triRotatedZ.p[0], &matRotZ);
@@ -93,100 +94,131 @@ void draw_cube(mat4 *proj, MouseData *mice)
         // MultiplyMatVec(&triRotatedZX.p[1], &triRotatedZXY.p[1], &matRotY);
         // MultiplyMatVec(&triRotatedZX.p[2], &triRotatedZXY.p[2], &matRotY);
 
-        MultiplyMatVecProj(&triRotatedZX.p[0], &triCalc.p[0], proj);
-        MultiplyMatVecProj(&triRotatedZX.p[1], &triCalc.p[1], proj);
-        MultiplyMatVecProj(&triRotatedZX.p[2], &triCalc.p[2], proj);
+       
 
-        // scale the view
-        for (byte i = 0; i < 3; i++)
+        triTranslated = triRotatedZX;
+        triTranslated.p[0].z = triRotatedZX.p[0].z + 2.0f;
+        triTranslated.p[1].z = triRotatedZX.p[1].z + 2.0f;
+        triTranslated.p[2].z = triRotatedZX.p[2].z + 2.0f;
+
+        vec3d normal, line1, line2;
+        line1.x = triTranslated.p[1].x - triTranslated.p[0].x;
+        line1.y = triTranslated.p[1].y - triTranslated.p[0].y;
+        line1.z = triTranslated.p[1].z - triTranslated.p[0].z;
+
+        line2.x = triTranslated.p[2].x - triTranslated.p[0].x;
+        line2.y = triTranslated.p[2].y - triTranslated.p[0].y;
+        line2.z = triTranslated.p[2].z - triTranslated.p[0].z;
+
+        normal.x = line1.y * line2.z - line1.z * line2.y;
+        normal.y = line1.z * line2.x - line1.x * line2.z;
+        normal.z = line1.x * line2.y - line1.y * line2.x;
+
+        // It's normally normal to normalise the normal
+        float l = sqrtf(normal.x * normal.x + normal.y * normal.y + normal.z * normal.z);
+        normal.x /= l;
+        normal.y /= l;
+        normal.z /= l;
+
+        // if (normal.z < 0)
+        if (normal.x * (triTranslated.p[0].x - vCamera.x) +
+                normal.y * (triTranslated.p[0].y - vCamera.y) +
+                normal.z * (triTranslated.p[0].z - vCamera.z) >=
+            1)
         {
-            triCalc.p[i].x += 1;
-            triCalc.p[i].y += 1;
-            triCalc.p[i].x *= 0.5 * (float)84;
-            triCalc.p[i].y *= 0.5 * (float)48;
+            MultiplyMatVecProj(&triRotatedZX.p[0], &triCalc.p[0], proj);
+            MultiplyMatVecProj(&triRotatedZX.p[1], &triCalc.p[1], proj);
+            MultiplyMatVecProj(&triRotatedZX.p[2], &triCalc.p[2], proj);
+
+            // scale the view
+            for (byte i = 0; i < 3; i++)
+            {
+                triCalc.p[i].x += 1;
+                triCalc.p[i].y += 1;
+                triCalc.p[i].x *= 0.5 * (float)84;
+                triCalc.p[i].y *= 0.5 * (float)48;
+            }
+            drawTriangle(triCalc.p[0].x, triCalc.p[0].y, triCalc.p[1].x, triCalc.p[1].y, triCalc.p[2].x, triCalc.p[2].y);
         }
-        drawTriangle(triCalc.p[0].x, triCalc.p[0].y, triCalc.p[1].x, triCalc.p[1].y, triCalc.p[2].x, triCalc.p[2].y);
     }
 }
-
-mesh MeshCube =
-    {
-        // SOUTH
-        (struct triangle){
-            (struct vec3d){-1.0f, 1.0f, -1.0f},
-            (struct vec3d){-1.0f, 1.0f, 1.0f},
-            (struct vec3d){1.0f, 1.0f, 1.0f}},
-        (struct triangle){
-            (struct vec3d){-1.0f, 1.0f, -1.0f},
-            (struct vec3d){1.0f, 1.0f, 1.0f},
-            (struct vec3d){1.0f, 1.0f, -1.0f}},
-
-        // EAST
-        (struct triangle){
-            (struct vec3d){1.0f, 1.0f, -1.0f},
-            (struct vec3d){1.0f, 1.0f, 1.0f},
-            (struct vec3d){1.0f, -1.0f, 1.0f}},
-        (struct triangle){
-            (struct vec3d){1.0f, 1.0f, -1.0f},
-            (struct vec3d){1.0f, -1.0f, 1.0f},
-            (struct vec3d){1.0f, -1.0f, -1.0f}},
-
-        // NORTH
-        (struct triangle){
-            (struct vec3d){1.0f, -1.0f, -1.0f},
-            (struct vec3d){1.0f, -1.0f, 1.0f},
-            (struct vec3d){-1.0f, -1.0f, 1.0f}},
-        (struct triangle){
-            (struct vec3d){1.0f, -1.0f, -1.0f},
-            (struct vec3d){-1.0f, -1.0f, 1.0f},
-            (struct vec3d){-1.0f, -1.0f, -1.0f}},
-
-        // WEST
-        (struct triangle){
-            (struct vec3d){-1.0f, -1.0f, -1.0f},
-            (struct vec3d){-1.0f, -1.0f, 1.0f},
-            (struct vec3d){-1.0f, 1.0f, 1.0f}},
-        (struct triangle){
-            (struct vec3d){-1.0f, -1.0f, -1.0f},
-            (struct vec3d){-1.0f, 1.0f, 1.0f},
-            (struct vec3d){-1.0f, 1.0f, -1.0f}},
-
-        // TOP
-        (struct triangle){
-            (struct vec3d){-1.0f, 1.0f, 1.0f},
-            (struct vec3d){-1.0f, -1.0f, 1.0f},
-            (struct vec3d){1.0f, -1.0f, 1.0f}},
-        (struct triangle){
-            (struct vec3d){-1.0f, 1.0f, 1.0f},
-            (struct vec3d){1.0f, -1.0f, 1.0f},
-            (struct vec3d){1.0f, 1.0f, 1.0f}},
-
-        // BOTTOM
-        (struct triangle){
-            (struct vec3d){-1.0f, 1.0f, -1.0f},
-            (struct vec3d){-1.0f, -1.0f, -1.0f},
-            (struct vec3d){1.0f, -1.0f, -1.0f}},
-        (struct triangle){
-            (struct vec3d){-1.0f, 1.0f, -1.0f},
-            (struct vec3d){1.0f, -1.0f, -1.0f},
-            (struct vec3d){1.0f, 1.0f, -1.0f}},
-
-};
-
-mat4 _startE()
-{
-    
-    mat4 proj;
-    proj.m[0][0] = faspect_r * fFovRad;
-    proj.m[1][1] = fFovRad;
-    proj.m[2][2] = ffar / (ffar - fnear);
-    proj.m[2][3] = 1.0f;
-    proj.m[3][2] = (-ffar * fnear) / (ffar - fnear);
-    proj.m[3][3] = 0.0f;
-    for (byte z = 0; z < 12; z++)
-        for (int i = 0; i < 3; i++)
+    mesh MeshCube =
         {
-            MeshCube.tris[z].p[i].z += 0.01f;
-        }
-    return proj;
-}
+            // SOUTH
+            (struct triangle){
+                (struct vec3d){-1.0f, 1.0f, -1.0f},
+                (struct vec3d){-1.0f, 1.0f, 1.0f},
+                (struct vec3d){1.0f, 1.0f, 1.0f}},
+            (struct triangle){
+                (struct vec3d){-1.0f, 1.0f, -1.0f},
+                (struct vec3d){1.0f, 1.0f, 1.0f},
+                (struct vec3d){1.0f, 1.0f, -1.0f}},
+
+            // EAST
+            (struct triangle){
+                (struct vec3d){1.0f, 1.0f, -1.0f},
+                (struct vec3d){1.0f, 1.0f, 1.0f},
+                (struct vec3d){1.0f, -1.0f, 1.0f}},
+            (struct triangle){
+                (struct vec3d){1.0f, 1.0f, -1.0f},
+                (struct vec3d){1.0f, -1.0f, 1.0f},
+                (struct vec3d){1.0f, -1.0f, -1.0f}},
+
+            // NORTH
+            (struct triangle){
+                (struct vec3d){1.0f, -1.0f, -1.0f},
+                (struct vec3d){1.0f, -1.0f, 1.0f},
+                (struct vec3d){-1.0f, -1.0f, 1.0f}},
+            (struct triangle){
+                (struct vec3d){1.0f, -1.0f, -1.0f},
+                (struct vec3d){-1.0f, -1.0f, 1.0f},
+                (struct vec3d){-1.0f, -1.0f, -1.0f}},
+
+            // WEST
+            (struct triangle){
+                (struct vec3d){-1.0f, -1.0f, -1.0f},
+                (struct vec3d){-1.0f, -1.0f, 1.0f},
+                (struct vec3d){-1.0f, 1.0f, 1.0f}},
+            (struct triangle){
+                (struct vec3d){-1.0f, -1.0f, -1.0f},
+                (struct vec3d){-1.0f, 1.0f, 1.0f},
+                (struct vec3d){-1.0f, 1.0f, -1.0f}},
+
+            // TOP
+            (struct triangle){
+                (struct vec3d){-1.0f, 1.0f, 1.0f},
+                (struct vec3d){-1.0f, -1.0f, 1.0f},
+                (struct vec3d){1.0f, -1.0f, 1.0f}},
+            (struct triangle){
+                (struct vec3d){-1.0f, 1.0f, 1.0f},
+                (struct vec3d){1.0f, -1.0f, 1.0f},
+                (struct vec3d){1.0f, 1.0f, 1.0f}},
+
+            // BOTTOM
+            (struct triangle){
+                (struct vec3d){-1.0f, 1.0f, -1.0f},
+                (struct vec3d){-1.0f, -1.0f, -1.0f},
+                (struct vec3d){1.0f, -1.0f, -1.0f}},
+            (struct triangle){
+                (struct vec3d){-1.0f, 1.0f, -1.0f},
+                (struct vec3d){1.0f, -1.0f, -1.0f},
+                (struct vec3d){1.0f, 1.0f, -1.0f}},
+
+        };
+    mat4 _startE()
+    {
+
+        mat4 proj;
+        proj.m[0][0] = faspect_r * fFovRad;
+        proj.m[1][1] = fFovRad;
+        proj.m[2][2] = ffar / (ffar - fnear);
+        proj.m[2][3] = 1.0f;
+        proj.m[3][2] = (-ffar * fnear) / (ffar - fnear);
+        proj.m[3][3] = 0.0f;
+        for (byte z = 0; z < 12; z++)
+            for (int i = 0; i < 3; i++)
+            {
+                MeshCube.tris[z].p[i].z += 0.01f;
+            }
+        return proj;
+    }
