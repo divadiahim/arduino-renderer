@@ -10,11 +10,11 @@ static inline float fixed_to_float(int16_t f)
 }
 static inline int16_t fixed_mult(int16_t a, int16_t b)
 {
-    return (int32_t)a * b >> 8;
+    return ((int32_t)a * (int32_t)b) >> 8;
 }
 static inline int16_t fixed_div(int16_t a, int16_t b)
 {
-    return (a << 8) / b;
+    return ((int32_t)a << 8) / b;
 }
 static inline uint8_t fixed_to_int(int16_t f)
 {
@@ -97,6 +97,7 @@ float FovRad = (1.0f / tanf(Fov * 0.5 / 180.0f * PI));
 fixed ThetaX = 0;
 fixed ThetaY = 0;
 vec3d_fixed CameraPos = {0, 0, 0};
+char text_buffer[80];
 void draw_cube_fixed(mat4_fixed *proj, MouseData *mice)
 {
     static mat4_fixed matRotZ, matRotX, matt;
@@ -170,9 +171,9 @@ void draw_cube_fixed(mat4_fixed *proj, MouseData *mice)
         MultiplyMatVec(&triRotatedZ.p[2], &triRotatedZX.p[2], &matRotX);
 
         triTranslated = triRotatedZX;
-        triTranslated.p[0].z = triRotatedZX.p[0].z + to_fixed(3.0f);
-        triTranslated.p[1].z = triRotatedZX.p[1].z + to_fixed(3.0f);
-        triTranslated.p[2].z = triRotatedZX.p[2].z + to_fixed(3.0f);
+        triTranslated.p[0].z = triRotatedZX.p[0].z + to_fixed(2.0f);
+        triTranslated.p[1].z = triRotatedZX.p[1].z + to_fixed(2.0f);
+        triTranslated.p[2].z = triRotatedZX.p[2].z + to_fixed(2.0f);
         //  //Rotate in Y-Axis
         // MultiplyMatVec(&triRotatedZX.p[0], &triRotatedZXY.p[0], &matRotY);
         // MultiplyMatVec(&triRotatedZX.p[1], &triRotatedZXY.p[1], &matRotY);
@@ -187,6 +188,11 @@ void draw_cube_fixed(mat4_fixed *proj, MouseData *mice)
         line2.y = triTranslated.p[2].y - triTranslated.p[0].y;
         line2.z = triTranslated.p[2].z - triTranslated.p[0].z;
 
+        // sprintf(text_buffer, "line1: %d %d %d\n", line1.x, line1.y, line1.z);
+        // Serial.println(text_buffer);
+        // sprintf(text_buffer, "line2: %d %d %d\n", line2.x, line2.y, line2.z);
+        // Serial.println(text_buffer);
+
         normal.x = fixed_mult(line1.y, line2.z) - fixed_mult(line1.z, line2.y);
         normal.y = fixed_mult(line1.z, line2.x) - fixed_mult(line1.x, line2.z);
         normal.z = fixed_mult(line1.x, line2.y) - fixed_mult(line1.y, line2.x);
@@ -197,9 +203,9 @@ void draw_cube_fixed(mat4_fixed *proj, MouseData *mice)
         normal.x = fixed_div(normal.x, length);
         normal.y = fixed_div(normal.y, length);
         normal.z = fixed_div(normal.z, length);
-        Serial.println(fixed_to_float(normal.z));
+      //  Serial.println(fixed_to_float(normal.z));
         //if(fixed_to_float(normal.z) > 0.0f)
-        if (fixed_to_float((fixed_mult(normal.x, (triTranslated.p[0].x - CameraPos.x)) + fixed_mult(normal.y, (triTranslated.p[0].y - CameraPos.y)) + fixed_mult(normal.z, (triTranslated.p[0].z - CameraPos.z)))) < 0.0f)
+        if (fixed_to_float(fixed_mult(normal.x, (triTranslated.p[0].x - CameraPos.x)) + fixed_mult(normal.y, (triTranslated.p[0].y - CameraPos.y)) + fixed_mult(normal.z, (triTranslated.p[0].z - CameraPos.z))) < 1)
         {
             MultiplyMatVecProj(&triRotatedZX.p[0], &triCalc.p[0], proj);
             MultiplyMatVecProj(&triRotatedZX.p[1], &triCalc.p[1], proj);
@@ -260,27 +266,29 @@ mesh_fixed MeshCubeFixed =
             (struct vec3d_fixed){-256, 256, 256},
             (struct vec3d_fixed){-256, 256, -256}},
 
-        // TOP
+         // TOP
+        (struct triangle_fixed){
+            (struct vec3d_fixed){-256, 256, 256},
+            (struct vec3d_fixed){-256, -256, 256},
+            (struct vec3d_fixed){256, -256, 256}},
         (struct triangle_fixed){
             (struct vec3d_fixed){-256, 256, 256},
             (struct vec3d_fixed){256, -256, 256},
-            (struct vec3d_fixed){-256, -256, 256}},
+            (struct vec3d_fixed){256, 256, 256}},
             
-        (struct triangle_fixed){
-            (struct vec3d_fixed){-256, 256, 256},
-            (struct vec3d_fixed){256, 256, 256},
-            (struct vec3d_fixed){256, -256, 256}},
             
 
         // BOTTOM
         (struct triangle_fixed){
             (struct vec3d_fixed){-256, 256, -256},
-            (struct vec3d_fixed){-256, -256, -256},
-            (struct vec3d_fixed){256, -256, -256}},
+            (struct vec3d_fixed){256, -256, -256},//fixed wrong orientation
+            (struct vec3d_fixed){-256, -256, -256}},
+            
         (struct triangle_fixed){
             (struct vec3d_fixed){-256, 256, -256},
-            (struct vec3d_fixed){256, -256, -256},
-            (struct vec3d_fixed){256, 256, -256}},
+            (struct vec3d_fixed){256, 256, -256},//fixed wrong orientation
+            (struct vec3d_fixed){256, -256, -256}},
+            
 
 };
 // mesh_fixed MeshCubeFixed =

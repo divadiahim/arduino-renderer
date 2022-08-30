@@ -19,7 +19,7 @@ void MultiplyMatVecProj(vec3d *vec_in, vec3d *vec_out, mat4 *m)
     vec_out->x = vec_in->x * m->m[0][0];
     vec_out->y = vec_in->y * m->m[1][1];
     vec_out->z = vec_in->z * m->m[2][2] + m->m[3][2];
-    float w = vec_in->z * m->m[2][3] + m->m[3][3];
+    //float w = vec_in->z * m->m[2][3] + m->m[3][3];
     // if (!w)
     // {
     //     vec_out->x /= w;
@@ -31,7 +31,7 @@ float fThetaX = 0;
 float fThetaY = 0;
 float fFov = 120.0f;
 float fFovRad = 1.0f / tanf(fFov * 0.5 / 180.0f * PI);
-vec3d vCamera;
+vec3d vCamera = {0, 0, 0};
 void draw_cube(mat4 *proj, MouseData *mice)
 {
     mat4 matRotZ, matRotX;
@@ -95,7 +95,6 @@ void draw_cube(mat4 *proj, MouseData *mice)
         // MultiplyMatVec(&triRotatedZX.p[2], &triRotatedZXY.p[2], &matRotY);
 
        
-
         triTranslated = triRotatedZX;
         triTranslated.p[0].z = triRotatedZX.p[0].z + 2.0f;
         triTranslated.p[1].z = triRotatedZX.p[1].z + 2.0f;
@@ -114,7 +113,6 @@ void draw_cube(mat4 *proj, MouseData *mice)
         normal.y = line1.z * line2.x - line1.x * line2.z;
         normal.z = line1.x * line2.y - line1.y * line2.x;
 
-        // It's normally normal to normalise the normal
         float l = sqrtf(normal.x * normal.x + normal.y * normal.y + normal.z * normal.z);
         normal.x /= l;
         normal.y /= l;
@@ -194,15 +192,17 @@ void draw_cube(mat4 *proj, MouseData *mice)
                 (struct vec3d){1.0f, -1.0f, 1.0f},
                 (struct vec3d){1.0f, 1.0f, 1.0f}},
 
-            // BOTTOM
+            // BOTTOM)
             (struct triangle){
                 (struct vec3d){-1.0f, 1.0f, -1.0f},
-                (struct vec3d){-1.0f, -1.0f, -1.0f},
-                (struct vec3d){1.0f, -1.0f, -1.0f}},
+                (struct vec3d){1.0f, -1.0f, -1.0f},//flipped these 2 to match the direction of the normal()
+                (struct vec3d){-1.0f,-1.0f, -1.0f}},//
+                
             (struct triangle){
-                (struct vec3d){-1.0f, 1.0f, -1.0f},
-                (struct vec3d){1.0f, -1.0f, -1.0f},
-                (struct vec3d){1.0f, 1.0f, -1.0f}},
+                (struct vec3d){-1.0f, 1.0f,-1.0f},
+                (struct vec3d){1.0f, 1.0f, -1.0f},//flipped these 2 to match the direction of the normal
+                (struct vec3d){1.0f, -1.0f,-1.0f}},//
+                
 
         };
     mat4 _startE()
